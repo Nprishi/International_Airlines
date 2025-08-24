@@ -1,0 +1,85 @@
+export interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  dateOfBirth?: string;
+  nationality?: string;
+  passportNumber?: string;
+  createdAt: string;
+}
+
+export interface Flight {
+  id: string;
+  flightNumber: string;
+  airline: string;
+  from: string;
+  to: string;
+  departureTime: string;
+  arrivalTime: string;
+  duration: string;
+  price: number;
+  availableSeats: number;
+  aircraft: string;
+  class: 'Economy' | 'Business' | 'First';
+}
+
+export interface SearchFilters {
+  from: string;
+  to: string;
+  departureDate: string;
+  returnDate?: string;
+  passengers: number;
+  class: 'Economy' | 'Business' | 'First';
+  tripType: 'one-way' | 'round-trip';
+}
+
+export interface Passenger {
+  id: string;
+  title: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  nationality: string;
+  passportNumber: string;
+  email: string;
+  phone: string;
+}
+
+export interface Seat {
+  id: string;
+  seatNumber: string;
+  class: 'Economy' | 'Business' | 'First';
+  isAvailable: boolean;
+  price: number;
+  position: 'window' | 'middle' | 'aisle';
+}
+
+export interface Booking {
+  id: string;
+  userId: string;
+  flightId: string;
+  passengers: Passenger[];
+  seats: string[];
+  totalAmount: number;
+  status: 'confirmed' | 'pending' | 'cancelled';
+  bookingDate: string;
+  paymentMethod: string;
+  pnr: string;
+}
+
+export interface PaymentDetails {
+  method: 'credit-card' | 'debit-card' | 'paypal' | 'bank-transfer';
+  cardNumber?: string;
+  expiryDate?: string;
+  cvv?: string;
+  cardHolderName?: string;
+  billingAddress?: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+}

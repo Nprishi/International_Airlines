@@ -1,6 +1,8 @@
 import React from 'react';
 import { CheckCircle, Download, Mail, Calendar, MapPin, Users, Plane } from 'lucide-react';
 import { useBooking } from '../contexts/BookingContext';
+import { generateTicketPDF } from '../utils/ticketGenerator';
+import { mockFlights } from '../data/mockData';
 import { Link } from 'react-router-dom';
 
 const BookingConfirmation: React.FC = () => {
@@ -13,6 +15,16 @@ const BookingConfirmation: React.FC = () => {
       </div>
     );
   }
+
+  const handleDownloadTicket = () => {
+    if (currentBooking && selectedFlight) {
+      generateTicketPDF({
+        booking: currentBooking,
+        flight: selectedFlight,
+        passengers: passengers
+      });
+    }
+  };
 
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString('en-US', {
@@ -161,7 +173,10 @@ const BookingConfirmation: React.FC = () => {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4">
-            <button className="flex-1 bg-primary-600 text-white py-3 px-6 rounded-md hover:bg-primary-700 transition-colors flex items-center justify-center">
+            <button 
+              onClick={handleDownloadTicket}
+              className="flex-1 bg-primary-600 text-white py-3 px-6 rounded-md hover:bg-primary-700 transition-colors flex items-center justify-center"
+            >
               <Download className="h-4 w-4 mr-2" />
               Download E-Ticket
             </button>

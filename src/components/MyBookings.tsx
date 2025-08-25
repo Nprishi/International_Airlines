@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Clock, Users, Download, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { generateTicketPDF } from '../utils/ticketGenerator';
 import { Booking } from '../types';
 import { mockFlights } from '../data/mockData';
 
@@ -49,6 +50,17 @@ const MyBookings: React.FC = () => {
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handleDownloadTicket = (booking: Booking) => {
+    const flight = getFlightDetails(booking.flightId);
+    if (flight) {
+      generateTicketPDF({
+        booking: booking,
+        flight: flight,
+        passengers: booking.passengers
+      });
     }
   };
 
@@ -181,7 +193,10 @@ const MyBookings: React.FC = () => {
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-2">
-                        <button className="flex-1 bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 transition-colors flex items-center justify-center text-sm">
+                        <button 
+                          onClick={() => handleDownloadTicket(booking)}
+                          className="flex-1 bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 transition-colors flex items-center justify-center text-sm"
+                        >
                           <Download className="h-4 w-4 mr-2" />
                           Download E-Ticket
                         </button>

@@ -71,15 +71,22 @@ export interface Booking {
 
 export interface PaymentDetails {
   method: 'credit-card' | 'debit-card' | 'paypal' | 'bank-transfer';
-  cardNumber?: string;
-  expiryDate?: string;
-  cvv?: string;
-  cardHolderName?: string;
-  billingAddress?: {
+  cardNumber: string;
+  expiryDate: string;
+  cvv: string;
+  cardHolderName: string;
+  billingAddress: {
     street: string;
     city: string;
     state: string;
     zipCode: string;
     country: string;
   };
+}
+
+export interface TotalsSummary {
+  subtotal: number;
+  taxes: number;
+  serviceFee: number;
+  total: number;
 }

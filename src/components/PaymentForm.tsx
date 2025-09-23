@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { CreditCard, Lock, Calendar, User } from 'lucide-react';
 import { useBooking } from '../contexts/BookingContext';
 import { useAuth } from '../contexts/AuthContext';
-import { PaymentDetails } from '../types';
+import { PaymentDetails, TotalsSummary } from '../types';
 
 interface PaymentFormProps {
   onNext: () => void;
@@ -35,7 +35,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
       setPaymentData(prev => ({
         ...prev,
         billingAddress: {
-          ...prev.billingAddress!,
+          ...prev.billingAddress,
           [addressField]: value,
         },
       }));
@@ -117,8 +117,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const calculateTotal = () => {
-    if (!selectedFlight) return 0;
+  const calculateTotal = (): TotalsSummary => {
     
     let total = selectedFlight.price * passengers.length;
     
@@ -172,7 +171,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
     return <div className="p-6">Missing booking information</div>;
   }
 
-  const totals = calculateTotal();
+  const totals: TotalsSummary = calculateTotal();
 
   return (
     <div className="p-6">
@@ -320,7 +319,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
                   </label>
                   <input
                     type="text"
-                    value={paymentData.billingAddress?.street || ''}
+                    value={paymentData.billingAddress.street}
                     onChange={(e) => handleInputChange('billingAddress.street', e.target.value)}
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
                       errors['billingAddress.street'] ? 'border-red-300' : 'border-gray-300'
@@ -338,7 +337,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
                   </label>
                   <input
                     type="text"
-                    value={paymentData.billingAddress?.city || ''}
+                    value={paymentData.billingAddress.city}
                     onChange={(e) => handleInputChange('billingAddress.city', e.target.value)}
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
                       errors['billingAddress.city'] ? 'border-red-300' : 'border-gray-300'
@@ -356,7 +355,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
                   </label>
                   <input
                     type="text"
-                    value={paymentData.billingAddress?.state || ''}
+                    value={paymentData.billingAddress.state}
                     onChange={(e) => handleInputChange('billingAddress.state', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                     placeholder="State"
@@ -369,7 +368,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
                   </label>
                   <input
                     type="text"
-                    value={paymentData.billingAddress?.zipCode || ''}
+                    value={paymentData.billingAddress.zipCode}
                     onChange={(e) => handleInputChange('billingAddress.zipCode', e.target.value)}
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
                       errors['billingAddress.zipCode'] ? 'border-red-300' : 'border-gray-300'
@@ -386,7 +385,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
                     Country
                   </label>
                   <select
-                    value={paymentData.billingAddress?.country || ''}
+                    value={paymentData.billingAddress.country}
                     onChange={(e) => handleInputChange('billingAddress.country', e.target.value)}
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
                       errors['billingAddress.country'] ? 'border-red-300' : 'border-gray-300'

@@ -7,6 +7,7 @@ export interface User {
   dateOfBirth?: string;
   nationality?: string;
   passportNumber?: string;
+  profilePicture?: string;
   createdAt: string;
 }
 

@@ -53,9 +53,17 @@ const Header: React.FC = () => {
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
                   className="flex items-center space-x-2 bg-primary-50 hover:bg-primary-100 rounded-full px-3 py-2 transition-colors"
                 >
-                  <div className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                    {getUserInitials(user.firstName, user.lastName)}
-                  </div>
+                  {user.profilePicture ? (
+                    <img
+                      src={user.profilePicture}
+                      alt="Profile"
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                      {getUserInitials(user.firstName, user.lastName)}
+                    </div>
+                  )}
                   <span className="hidden sm:block text-gray-700 font-medium">
                     {user.firstName}
                   </span>

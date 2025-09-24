@@ -8,6 +8,10 @@ import Login from './components/Login';
 import Signup from './components/Signup';
 import BookingFlow from './components/BookingFlow';
 import MyBookings from './components/MyBookings';
+import Profile from './components/Profile';
+import CheckIn from './components/CheckIn';
+import Support from './components/Support';
+import Settings from './components/Settings';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -81,27 +85,40 @@ function App() {
                 } 
               />
               <Route 
-                path="/flights" 
-                element={<Navigate to="/" />} 
-              />
-              <Route 
-                path="/check-in" 
-                element={<Navigate to="/my-bookings" />} 
-              />
-              <Route 
-                path="/support" 
-                element={<Navigate to="/" />} 
-              />
-              <Route 
                 path="/profile" 
                 element={
                   <ProtectedRoute>
-                    <Navigate to="/my-bookings" />
+                    <Profile />
                   </ProtectedRoute>
                 } 
               />
               <Route 
+                path="/check-in" 
+                element={<CheckIn />} 
+              />
+              <Route 
+                path="/support" 
+                element={<Support />} 
+              />
+              <Route 
                 path="/settings" 
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/flights" 
+                element={<Navigate to="/" />} 
+              />
+            </Routes>
+          </div>
+        </Router>
+      </BookingProvider>
+    </AuthProvider>
+  );
+}
                 element={
                   <ProtectedRoute>
                     <Navigate to="/my-bookings" />
@@ -116,4 +133,5 @@ function App() {
   );
 }
 
+export default App;
 export default App;

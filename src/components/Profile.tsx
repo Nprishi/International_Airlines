@@ -228,8 +228,8 @@ const Profile: React.FC = () => {
                       value={profileData.firstName}
                       onChange={(e) => handleInputChange('firstName', e.target.value)}
                       disabled={!isEditing}
-                      className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                        !isEditing ? 'bg-gray-50' : 'bg-white'
+                      className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 ${
+                        !isEditing ? 'bg-gray-50 text-gray-700' : 'bg-white'
                       } ${errors.firstName ? 'border-red-300' : 'border-gray-300'}`}
                     />
                   </div>
@@ -249,8 +249,8 @@ const Profile: React.FC = () => {
                       value={profileData.lastName}
                       onChange={(e) => handleInputChange('lastName', e.target.value)}
                       disabled={!isEditing}
-                      className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                        !isEditing ? 'bg-gray-50' : 'bg-white'
+                      className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 ${
+                        !isEditing ? 'bg-gray-50 text-gray-700' : 'bg-white'
                       } ${errors.lastName ? 'border-red-300' : 'border-gray-300'}`}
                     />
                   </div>
@@ -270,8 +270,8 @@ const Profile: React.FC = () => {
                       value={profileData.dateOfBirth}
                       onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
                       disabled={!isEditing}
-                      className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                        !isEditing ? 'bg-gray-50' : 'bg-white'
+                      className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 ${
+                        !isEditing ? 'bg-gray-50 text-gray-700' : 'bg-white'
                       } border-gray-300`}
                     />
                   </div>
@@ -287,13 +287,13 @@ const Profile: React.FC = () => {
                       value={profileData.nationality}
                       onChange={(e) => handleInputChange('nationality', e.target.value)}
                       disabled={!isEditing}
-                      className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                        !isEditing ? 'bg-gray-50' : 'bg-white'
+                      className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 ${
+                        !isEditing ? 'bg-gray-50 text-gray-700' : 'bg-white'
                       } border-gray-300`}
                     >
-                      <option value="">Select nationality</option>
+                      <option value="" className="text-gray-500">Select nationality</option>
                       {countries.map(country => (
-                        <option key={country} value={country}>{country}</option>
+                        <option key={country} value={country} className="text-gray-900">{country}</option>
                       ))}
                     </select>
                   </div>
@@ -317,8 +317,8 @@ const Profile: React.FC = () => {
                       value={profileData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       disabled={!isEditing}
-                      className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                        !isEditing ? 'bg-gray-50' : 'bg-white'
+                      className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 ${
+                        !isEditing ? 'bg-gray-50 text-gray-700' : 'bg-white'
                       } ${errors.email ? 'border-red-300' : 'border-gray-300'}`}
                     />
                   </div>
@@ -338,8 +338,8 @@ const Profile: React.FC = () => {
                       value={profileData.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
                       disabled={!isEditing}
-                      className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                        !isEditing ? 'bg-gray-50' : 'bg-white'
+                      className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 ${
+                        !isEditing ? 'bg-gray-50 text-gray-700' : 'bg-white'
                       } ${errors.phone ? 'border-red-300' : 'border-gray-300'}`}
                     />
                   </div>
@@ -359,8 +359,8 @@ const Profile: React.FC = () => {
                       value={profileData.passportNumber}
                       onChange={(e) => handleInputChange('passportNumber', e.target.value.toUpperCase())}
                       disabled={!isEditing}
-                      className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                        !isEditing ? 'bg-gray-50' : 'bg-white'
+                      className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 ${
+                        !isEditing ? 'bg-gray-50 text-gray-700' : 'bg-white'
                       } border-gray-300`}
                       placeholder="Passport number"
                     />

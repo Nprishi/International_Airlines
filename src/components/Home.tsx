@@ -191,15 +191,15 @@ const Home: React.FC = () => {
                         name="from"
                         value={searchData.from}
                         onChange={handleInputChange}
-                        className={`w-full pl-12 pr-4 py-4 text-lg border-2 rounded-xl focus:outline-none focus:ring-0 transition-all duration-200 bg-gray-50 hover:bg-white focus:bg-white ${
+                        className={`w-full pl-12 pr-4 py-4 text-lg border-2 rounded-xl focus:outline-none focus:ring-0 transition-all duration-200 bg-white text-gray-900 ${
                           errors.from 
                             ? 'border-red-300 focus:border-red-500' 
                             : 'border-gray-200 focus:border-primary-500 hover:border-gray-300'
                         }`}
                       >
-                        <option value="">Select departure city</option>
+                        <option value="" className="text-gray-500">Select departure city</option>
                         {cities.map(city => (
-                          <option key={city} value={city}>{city}</option>
+                          <option key={city} value={city} className="text-gray-900">{city}</option>
                         ))}
                       </select>
                     </div>
@@ -235,15 +235,15 @@ const Home: React.FC = () => {
                         name="to"
                         value={searchData.to}
                         onChange={handleInputChange}
-                        className={`w-full pl-12 pr-4 py-4 text-lg border-2 rounded-xl focus:outline-none focus:ring-0 transition-all duration-200 bg-gray-50 hover:bg-white focus:bg-white ${
+                        className={`w-full pl-12 pr-4 py-4 text-lg border-2 rounded-xl focus:outline-none focus:ring-0 transition-all duration-200 bg-white text-gray-900 ${
                           errors.to 
                             ? 'border-red-300 focus:border-red-500' 
                             : 'border-gray-200 focus:border-primary-500 hover:border-gray-300'
                         }`}
                       >
-                        <option value="">Select destination city</option>
+                        <option value="" className="text-gray-500">Select destination city</option>
                         {cities.map(city => (
-                          <option key={city} value={city}>{city}</option>
+                          <option key={city} value={city} className="text-gray-900">{city}</option>
                         ))}
                       </select>
                     </div>
@@ -274,7 +274,7 @@ const Home: React.FC = () => {
                       value={searchData.departureDate}
                       onChange={handleInputChange}
                       min={new Date().toISOString().split('T')[0]}
-                      className={`w-full pl-12 pr-4 py-4 text-lg border-2 rounded-xl focus:outline-none focus:ring-0 transition-all duration-200 bg-gray-50 hover:bg-white focus:bg-white ${
+                      className={`w-full pl-12 pr-4 py-4 text-lg border-2 rounded-xl focus:outline-none focus:ring-0 transition-all duration-200 bg-white text-gray-900 ${
                         errors.departureDate 
                           ? 'border-red-300 focus:border-red-500' 
                           : 'border-gray-200 focus:border-primary-500 hover:border-gray-300'
@@ -305,7 +305,7 @@ const Home: React.FC = () => {
                         value={searchData.returnDate}
                         onChange={handleInputChange}
                         min={searchData.departureDate || new Date().toISOString().split('T')[0]}
-                        className={`w-full pl-12 pr-4 py-4 text-lg border-2 rounded-xl focus:outline-none focus:ring-0 transition-all duration-200 bg-gray-50 hover:bg-white focus:bg-white ${
+                        className={`w-full pl-12 pr-4 py-4 text-lg border-2 rounded-xl focus:outline-none focus:ring-0 transition-all duration-200 bg-white text-gray-900 ${
                           errors.returnDate 
                             ? 'border-red-300 focus:border-red-500' 
                             : 'border-gray-200 focus:border-primary-500 hover:border-gray-300'
@@ -336,10 +336,10 @@ const Home: React.FC = () => {
                       name="passengers"
                       value={searchData.passengers}
                       onChange={handleInputChange}
-                      className="w-full pl-12 pr-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 hover:border-gray-300 transition-all duration-200 bg-gray-50 hover:bg-white focus:bg-white"
+                      className="w-full pl-12 pr-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 hover:border-gray-300 transition-all duration-200 bg-white text-gray-900"
                     >
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                        <option key={num} value={num}>
+                        <option key={num} value={num} className="text-gray-900">
                           {num} {num === 1 ? 'Passenger' : 'Passengers'}
                         </option>
                       ))}
@@ -359,11 +359,11 @@ const Home: React.FC = () => {
                       name="class"
                       value={searchData.class}
                       onChange={handleInputChange}
-                      className="w-full pl-12 pr-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 hover:border-gray-300 transition-all duration-200 bg-gray-50 hover:bg-white focus:bg-white"
+                      className="w-full pl-12 pr-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-500 hover:border-gray-300 transition-all duration-200 bg-white text-gray-900"
                     >
-                      <option value="Economy">Economy Class</option>
-                      <option value="Business">Business Class</option>
-                      <option value="First">First Class</option>
+                      <option value="Economy" className="text-gray-900">Economy Class</option>
+                      <option value="Business" className="text-gray-900">Business Class</option>
+                      <option value="First" className="text-gray-900">First Class</option>
                     </select>
                   </div>
                 </div>

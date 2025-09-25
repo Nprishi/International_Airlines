@@ -24,6 +24,8 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  color: #1f2937;
+  background-color: #f9fafb;
 }
 
 #root {
@@ -31,6 +33,7 @@ body {
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  width: 100%;
 }
 
 @media (prefers-color-scheme: light) {
@@ -38,6 +41,28 @@ body {
     color: #213547;
     background-color: #ffffff;
   }
+}
+
+/* Fix input and select styling */
+input, select, textarea {
+  color: #1f2937 !important;
+  background-color: #ffffff !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  color: #1f2937 !important;
+  background-color: #ffffff !important;
+}
+
+/* Fix dropdown options */
+select option {
+  color: #1f2937 !important;
+  background-color: #ffffff !important;
+}
+
+/* Fix placeholder text */
+input::placeholder, textarea::placeholder {
+  color: #9ca3af !important;
 }
 
 /* Custom scrollbar */

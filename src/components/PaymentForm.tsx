@@ -487,19 +487,19 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
             <div className="space-y-3 mb-4">
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Flight ({passengers.length} passenger{passengers.length > 1 ? 's' : ''})</span>
-                <span className="text-sm font-medium">${totals.subtotal.toFixed(2)}</span>
+                <CurrencyDisplay amount={totals.subtotal} className="text-sm font-medium" />
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Taxes & Fees</span>
-                <span className="text-sm font-medium">${totals.taxes.toFixed(2)}</span>
+                <CurrencyDisplay amount={totals.taxes} className="text-sm font-medium" />
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Service Fee</span>
-                <span className="text-sm font-medium">${totals.serviceFee.toFixed(2)}</span>
+                <CurrencyDisplay amount={totals.serviceFee} className="text-sm font-medium" />
               </div>
               <div className="border-t pt-3 flex justify-between">
                 <span className="font-semibold">Total</span>
-                <span className="font-semibold text-lg">${totals.total.toFixed(2)}</span>
+                <CurrencyDisplay amount={totals.total} className="font-semibold text-lg" />
               </div>
             </div>
 

@@ -146,9 +146,10 @@ const FlightList: React.FC<FlightListProps> = ({ onNext }) => {
                     </div>
                     
                     <div className="text-right">
-                      <div className="text-3xl font-bold text-primary-600 mb-1">
-                        ${flight.price}
-                      </div>
+                      <CurrencyDisplay 
+                        amount={flight.price} 
+                        className="text-3xl font-bold text-primary-600 mb-1" 
+                      />
                       <div className="text-sm text-gray-500">per person</div>
                       <div className="flex items-center justify-end mt-2">
                         <Star className="h-4 w-4 text-yellow-400 fill-current" />

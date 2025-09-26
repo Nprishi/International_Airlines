@@ -71,11 +71,16 @@ export interface Booking {
 }
 
 export interface PaymentDetails {
-  method: 'credit-card' | 'debit-card' | 'paypal' | 'bank-transfer';
+  method: 'credit-card' | 'debit-card' | 'paypal' | 'bank-transfer' | 'esewa' | 'khalti' | 'ime-pay' | 'mobile-banking' | 'connect-ips';
   cardNumber: string;
   expiryDate: string;
   cvv: string;
   cardHolderName: string;
+  // Nepal-specific payment fields
+  esewaId?: string;
+  khaltiNumber?: string;
+  mobileNumber?: string;
+  bankAccount?: string;
   billingAddress: {
     street: string;
     city: string;

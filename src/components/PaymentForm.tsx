@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { CreditCard, Lock, Calendar, User } from 'lucide-react';
+import { CreditCard, Lock, Calendar, User, Smartphone, Building, Wallet } from 'lucide-react';
 import { useBooking } from '../contexts/BookingContext';
 import { useAuth } from '../contexts/AuthContext';
 import { PaymentDetails, TotalsSummary } from '../types';
+import CurrencyDisplay from './CurrencyDisplay';
 
 interface PaymentFormProps {
   onNext: () => void;
@@ -18,6 +19,10 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
     expiryDate: '',
     cvv: '',
     cardHolderName: user ? `${user.firstName} ${user.lastName}` : '',
+    esewaId: '',
+    khaltiNumber: '',
+    mobileNumber: '',
+    bankAccount: '',
     billingAddress: {
       street: '',
       city: '',
@@ -187,7 +192,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
             {/* Payment Method */}
             <div>
               <h3 className="text-lg font-semibold mb-4">Payment Method</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
                   <input
                     type="radio"
@@ -211,6 +216,66 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
                   />
                   <CreditCard className="h-5 w-5 mr-2" />
                   Debit Card
+                </label>
+                <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="esewa"
+                    checked={paymentData.method === 'esewa'}
+                    onChange={(e) => handleInputChange('method', e.target.value)}
+                    className="mr-3"
+                  />
+                  <Wallet className="h-5 w-5 mr-2 text-green-600" />
+                  eSewa
+                </label>
+                <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="khalti"
+                    checked={paymentData.method === 'khalti'}
+                    onChange={(e) => handleInputChange('method', e.target.value)}
+                    className="mr-3"
+                  />
+                  <Wallet className="h-5 w-5 mr-2 text-purple-600" />
+                  Khalti
+                </label>
+                <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="ime-pay"
+                    checked={paymentData.method === 'ime-pay'}
+                    onChange={(e) => handleInputChange('method', e.target.value)}
+                    className="mr-3"
+                  />
+                  <Smartphone className="h-5 w-5 mr-2 text-blue-600" />
+                  IME Pay
+                </label>
+                <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="mobile-banking"
+                    checked={paymentData.method === 'mobile-banking'}
+                    onChange={(e) => handleInputChange('method', e.target.value)}
+                    className="mr-3"
+                  />
+                  <Smartphone className="h-5 w-5 mr-2 text-orange-600" />
+                  Mobile Banking
+                </label>
+                <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="connect-ips"
+                    checked={paymentData.method === 'connect-ips'}
+                    onChange={(e) => handleInputChange('method', e.target.value)}
+                    className="mr-3"
+                  />
+                  <Building className="h-5 w-5 mr-2 text-red-600" />
+                  ConnectIPS
                 </label>
               </div>
             </div>

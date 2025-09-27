@@ -4,6 +4,7 @@ import { useBooking } from '../contexts/BookingContext';
 import { useAuth } from '../contexts/AuthContext';
 import { PaymentDetails, TotalsSummary } from '../types';
 import CurrencyDisplay from './CurrencyDisplay';
+import PaymentConfirmation from './PaymentConfirmation';
 
 interface PaymentFormProps {
   onNext: () => void;
@@ -33,6 +34,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
     if (field.startsWith('billingAddress.')) {
@@ -122,6 +124,10 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const isNepalPaymentMethod = (method: string) => {
+    return ['esewa', 'khalti', 'ime-pay', 'mobile-banking', 'connect-ips'].includes(method);
+  };
+
   const calculateTotal = (): TotalsSummary => {
     
     let total = selectedFlight.price * passengers.length;
@@ -150,6 +156,13 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // For Nepal payment methods, show confirmation page
+    if (isNepalPaymentMethod(paymentData.method)) {
+      setShowPaymentConfirmation(true);
+      return;
+    }
+
+    // For card payments, validate form first
     if (!validateForm()) return;
 
     setIsProcessing(true);
@@ -172,11 +185,35 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
     }
   };
 
+  const handlePaymentSuccess = () => {
+    setPaymentDetails(paymentData);
+    if (user) {
+      createBooking(user.id);
+    }
+    onNext();
+  };
+
+  const handlePaymentCancel = () => {
+    setShowPaymentConfirmation(false);
+  };
+
   if (!selectedFlight || !user) {
     return <div className="p-6">Missing booking information</div>;
   }
 
   const totals: TotalsSummary = calculateTotal();
+
+  // Show payment confirmation for Nepal payment methods
+  if (showPaymentConfirmation) {
+    return (
+      <PaymentConfirmation
+        paymentMethod={paymentData.method}
+        amount={totals.total}
+        onSuccess={handlePaymentSuccess}
+        onCancel={handlePaymentCancel}
+      />
+    );
+  }
 
   return (
     <div className="p-6">
@@ -275,15 +312,21 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
                     className="mr-3"
                   />
                   <Building className="h-5 w-5 mr-2 text-red-600" />
-                  ConnectIPS
+            className="px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center text-lg font-semibold"
                 </label>
               </div>
             </div>
 
             {/* Card Information */}
-            <div className="bg-gray-50 rounded-lg p-6">
+            {!isNepalPaymentMethod(paymentData.method) && (
+            ) : isNepalPaymentMethod(paymentData.method) ? (
+              <>
+                <Lock className="h-5 w-5 mr-2" />
+                Continue to {paymentData.method.replace('-', ' ').toUpperCase()}
+              </>
+              <div className="bg-gray-50 rounded-lg p-6">
               <h4 className="font-semibold mb-4 flex items-center">
-                <Lock className="h-4 w-4 mr-2" />
+                <Lock className="h-5 w-5 mr-2" />
                 Card Information
               </h4>
               
@@ -372,10 +415,12 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
                   )}
                 </div>
               </div>
-            </div>
+              </div>
+            )}
 
             {/* Billing Address */}
-            <div>
+            {!isNepalPaymentMethod(paymentData.method) && (
+              <div>
               <h4 className="font-semibold mb-4">Billing Address</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
@@ -469,8 +514,21 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
                   )}
                 </div>
               </div>
-            </div>
+              </div>
+            )}
 
+            {/* Nepal Payment Method Info */}
+            {isNepalPaymentMethod(paymentData.method) && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <h4 className="font-semibold mb-4 text-blue-900">Payment Information</h4>
+                <div className="space-y-3 text-sm text-blue-800">
+                  <p>• You will be redirected to the official {paymentData.method.replace('-', ' ').toUpperCase()} payment page</p>
+                  <p>• Please have your login credentials ready</p>
+                  <p>• The payment will be processed securely through the official gateway</p>
+                  <p>• You will be redirected back after successful payment</p>
+                </div>
+              </div>
+            )}
             {errors.general && (
               <div className="bg-red-50 border border-red-200 rounded-md p-3">
                 <p className="text-red-700 text-sm">{errors.general}</p>

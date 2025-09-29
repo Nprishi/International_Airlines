@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Shield, Clock, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { ESewaPaymentService, PaymentServiceFactory, PaymentRequest } from '../services/paymentService';
 
 interface PaymentConfirmationProps {
   paymentMethod: string;
   amount: number;
+  bookingData: {
+    orderId: string;
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+  };
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -11,6 +18,7 @@ interface PaymentConfirmationProps {
 const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
   paymentMethod,
   amount,
+  bookingData,
   onSuccess,
   onCancel
 }) => {
@@ -126,18 +134,90 @@ const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
   };
 
   const simulatePaymentAPI = async () => {
-    // Simulate API call to payment gateway
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // Simulate random success/failure (90% success rate)
-    const isSuccess = Math.random() > 0.1;
-    
-    if (!isSuccess) {
-      throw new Error('Payment failed. Please check your credentials and try again.');
+    try {
+      // For eSewa, use real API integration
+      if (paymentMethod === 'esewa') {
+        const paymentRequest: PaymentRequest = {
+          amount: amount,
+          currency: 'USD',
+          paymentMethod: 'esewa',
+          orderId: bookingData.orderId,
+          customerInfo: {
+            name: bookingData.customerName,
+            email: bookingData.customerEmail,
+            phone: bookingData.customerPhone,
+          },
+          successUrl: `${window.location.origin}/payment/success`,
+          failureUrl: `${window.location.origin}/payment/failure`,
+        };
+
+        const response = await ESewaPaymentService.initiatePayment(paymentRequest);
+        
+        if (response.success && response.redirectForm) {
+          // Open eSewa payment form in new window
+          const paymentWindow = window.open('', '_blank', 'width=800,height=600');
+          if (paymentWindow) {
+            paymentWindow.document.write(response.redirectForm);
+            paymentWindow.document.close();
+            
+            // Listen for payment completion
+            const checkPaymentStatus = setInterval(() => {
+              if (paymentWindow.closed) {
+                clearInterval(checkPaymentStatus);
+                // Check payment status from localStorage or API
+                const paymentStatus = localStorage.getItem(`payment_${bookingData.orderId}`);
+                if (paymentStatus === 'success') {
+                  return { success: true };
+                } else {
+                  throw new Error('Payment was cancelled or failed');
+                }
+              }
+            }, 1000);
+            
+            // Wait for payment completion
+            await new Promise((resolve, reject) => {
+              const timeout = setTimeout(() => {
+                clearInterval(checkPaymentStatus);
+                reject(new Error('Payment timeout'));
+              }, 300000); // 5 minutes timeout
+              
+              const originalInterval = checkPaymentStatus;
+              checkPaymentStatus = setInterval(() => {
+                if (paymentWindow.closed) {
+                  clearInterval(originalInterval);
+                  clearTimeout(timeout);
+                  const paymentStatus = localStorage.getItem(`payment_${bookingData.orderId}`);
+                  if (paymentStatus === 'success') {
+                    resolve(true);
+                  } else {
+                    reject(new Error('Payment was cancelled or failed'));
+                  }
+                }
+              }, 1000);
+            });
+          } else {
+            throw new Error('Please allow popups for payment processing');
+          }
+        } else {
+          throw new Error(response.message || 'Failed to initiate payment');
+        }
+      } else {
+        // For other payment methods, use existing simulation
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Simulate random success/failure (90% success rate)
+        const isSuccess = Math.random() > 0.1;
+        
+        if (!isSuccess) {
+          throw new Error('Payment failed. Please check your credentials and try again.');
+        }
+      }
+    } catch (error) {
+      throw error;
     }
     
     return {
-      transactionId: `TXN${Date.now()}`,
+      transactionId: bookingData.orderId,
       status: 'success',
       amount: amount,
       method: paymentMethod

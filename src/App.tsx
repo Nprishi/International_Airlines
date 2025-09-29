@@ -12,6 +12,8 @@ import Profile from './components/Profile';
 import CheckIn from './components/CheckIn';
 import Support from './components/Support';
 import Settings from './components/Settings';
+import PaymentSuccess from './components/PaymentSuccess';
+import PaymentFailure from './components/PaymentFailure';
 
 function App() {
   return (
@@ -31,6 +33,8 @@ function App() {
                 <Route path="/check-in" element={<CheckIn />} />
                 <Route path="/support" element={<Support />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/payment/success" element={<PaymentSuccess />} />
+                <Route path="/payment/failure" element={<PaymentFailure />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>

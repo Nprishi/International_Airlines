@@ -205,10 +205,18 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
 
   // Show payment confirmation for Nepal payment methods
   if (showPaymentConfirmation) {
+    const bookingData = {
+      orderId: `ORD${Date.now()}`,
+      customerName: user ? `${user.firstName} ${user.lastName}` : '',
+      customerEmail: user?.email || '',
+      customerPhone: user?.phone || '',
+    };
+    
     return (
       <PaymentConfirmation
         paymentMethod={paymentData.method}
         amount={totals.total}
+        bookingData={bookingData}
         onSuccess={handlePaymentSuccess}
         onCancel={handlePaymentCancel}
       />

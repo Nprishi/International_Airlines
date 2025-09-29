@@ -319,11 +319,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
 
             {/* Card Information */}
             {!isNepalPaymentMethod(paymentData.method) && (
-            ) : isNepalPaymentMethod(paymentData.method) ? (
-              <>
-                <Lock className="h-5 w-5 mr-2" />
-                Continue to {paymentData.method.replace('-', ' ').toUpperCase()}
-              </>
               <div className="bg-gray-50 rounded-lg p-6">
               <h4 className="font-semibold mb-4 flex items-center">
                 <Lock className="h-5 w-5 mr-2" />

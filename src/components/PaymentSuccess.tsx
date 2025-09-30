@@ -15,32 +15,41 @@ const PaymentSuccess: React.FC = () => {
       const amt = searchParams.get('amt');
       const refId = searchParams.get('refId');
 
+      console.log('Payment Success Page - Parameters:', { oid, amt, refId });
       if (!oid || !amt || !refId) {
+        console.error('Missing payment parameters:', { oid, amt, refId });
         setVerificationStatus('failed');
         setMessage('Invalid payment parameters');
         return;
       }
 
       try {
+        console.log('Starting payment verification...');
         const result = await ESewaPaymentService.verifyPayment(oid, parseFloat(amt), refId);
+        console.log('Verification result:', result);
         
         if (result.success) {
+          console.log('Payment verified successfully');
           setVerificationStatus('success');
           setMessage('Payment verified successfully!');
           
           // Store success status for parent window
           localStorage.setItem(`payment_${oid}`, 'success');
+          console.log('Stored success status in localStorage');
           
           // Close window after 3 seconds
           setTimeout(() => {
+            console.log('Closing payment window...');
             window.close();
           }, 3000);
         } else {
+          console.error('Payment verification failed:', result.message);
           setVerificationStatus('failed');
           setMessage(result.message || 'Payment verification failed');
           localStorage.setItem(`payment_${oid}`, 'failed');
         }
       } catch (error) {
+        console.error('Payment verification error:', error);
         setVerificationStatus('failed');
         setMessage('Error verifying payment: ' + (error as Error).message);
         localStorage.setItem(`payment_${oid}`, 'failed');

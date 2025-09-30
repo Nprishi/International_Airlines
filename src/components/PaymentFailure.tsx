@@ -6,8 +6,10 @@ const PaymentFailure: React.FC = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
+    console.log('Payment Failure Page - Parameters:', Object.fromEntries(searchParams));
     // Store failure status for parent window
     const oid = searchParams.get('oid') || `payment_${Date.now()}`;
+    console.log('Storing failure status for:', oid);
     localStorage.setItem(`payment_${oid}`, 'failed');
   }, [searchParams]);
 

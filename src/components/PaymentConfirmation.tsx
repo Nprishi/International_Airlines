@@ -137,6 +137,8 @@ const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
     try {
       // For eSewa, use real API integration
       if (paymentMethod === 'esewa') {
+        console.log('Starting eSewa payment process...');
+        
         const paymentRequest: PaymentRequest = {
           amount: amount,
           currency: 'USD',
@@ -151,47 +153,72 @@ const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
           failureUrl: `${window.location.origin}/payment/failure`,
         };
 
+        console.log('Payment Request:', paymentRequest);
         const response = await ESewaPaymentService.initiatePayment(paymentRequest);
+        console.log('eSewa Response:', response);
         
         if (response.success && response.redirectForm) {
           // Open eSewa payment form in new window
-          const paymentWindow = window.open('', '_blank', 'width=800,height=600');
+          const paymentWindow = window.open('', '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
           if (paymentWindow) {
             paymentWindow.document.write(response.redirectForm);
             paymentWindow.document.close();
             
+            console.log('Payment window opened, waiting for completion...');
+            
             // Listen for payment completion
+            let checkCount = 0;
+            const maxChecks = 300; // 5 minutes timeout
+            
             const checkPaymentStatus = setInterval(() => {
+              checkCount++;
+              console.log(`Checking payment status... (${checkCount}/${maxChecks})`);
+              
               if (paymentWindow.closed) {
                 clearInterval(checkPaymentStatus);
+                console.log('Payment window closed, checking status...');
                 // Check payment status from localStorage or API
                 const paymentStatus = localStorage.getItem(`payment_${bookingData.orderId}`);
+                console.log('Payment status from localStorage:', paymentStatus);
                 if (paymentStatus === 'success') {
-                  return { success: true };
+                  console.log('Payment successful!');
+                  return;
                 } else {
+                  console.log('Payment failed or cancelled');
                   throw new Error('Payment was cancelled or failed');
                 }
+              } else if (checkCount >= maxChecks) {
+                clearInterval(checkPaymentStatus);
+                paymentWindow.close();
+                throw new Error('Payment timeout - please try again');
               }
             }, 1000);
             
             // Wait for payment completion
-            await new Promise((resolve, reject) => {
-              const timeout = setTimeout(() => {
-                clearInterval(checkPaymentStatus);
-                reject(new Error('Payment timeout'));
-              }, 300000); // 5 minutes timeout
+            return new Promise((resolve, reject) => {
+              const originalCheckPaymentStatus = checkPaymentStatus;
               
-              const originalInterval = checkPaymentStatus;
-              checkPaymentStatus = setInterval(() => {
+              const enhancedCheck = setInterval(() => {
+                checkCount++;
+                console.log(`Enhanced check ${checkCount}/${maxChecks}`);
+                
                 if (paymentWindow.closed) {
-                  clearInterval(originalInterval);
-                  clearTimeout(timeout);
+                  clearInterval(enhancedCheck);
+                  clearInterval(originalCheckPaymentStatus);
+                  
                   const paymentStatus = localStorage.getItem(`payment_${bookingData.orderId}`);
+                  console.log('Final payment status:', paymentStatus);
+                  
                   if (paymentStatus === 'success') {
-                    resolve(true);
+                    resolve({ success: true });
                   } else {
                     reject(new Error('Payment was cancelled or failed'));
                   }
+                } else if (checkCount >= maxChecks) {
+                  clearInterval(enhancedCheck);
+                  clearInterval(originalCheckPaymentStatus);
+                  paymentWindow.close();
+                  reject(new Error('Payment timeout - please try again'));
                 }
               }, 1000);
             });
@@ -199,6 +226,7 @@ const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
             throw new Error('Please allow popups for payment processing');
           }
         } else {
+          console.error('Failed to initiate eSewa payment:', response);
           throw new Error(response.message || 'Failed to initiate payment');
         }
       } else {

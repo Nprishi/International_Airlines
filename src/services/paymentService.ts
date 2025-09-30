@@ -46,6 +46,7 @@ export class ESewaPaymentService {
         fu: request.failureUrl,
       };
 
+      console.log('eSewa Payment Parameters:', params);
       // Create auto-submitting form HTML
       const form = `
         <html>
@@ -83,18 +84,23 @@ export class ESewaPaymentService {
             }
           </style>
         </head>
-        <body onload="document.forms[0].submit()">
+        <body onload="setTimeout(() => document.forms[0].submit(), 1000)">
           <div class="container">
             <div class="spinner"></div>
             <h2>Redirecting to eSewa Payment Gateway...</h2>
             <p>Please wait while we redirect you to complete your payment.</p>
             <p><strong>Amount:</strong> NPR ${amountInNPR.toLocaleString()}</p>
+            <p><strong>Order ID:</strong> ${request.orderId}</p>
+            <p><strong>Merchant:</strong> ${this.MERCHANT_CODE}</p>
           </div>
           <form action="${this.ESEWA_URL}" method="POST" style="display: none;">
             ${Object.entries(params)
               .map(([k, v]) => `<input type="hidden" name="${k}" value="${v}" />`)
               .join("")}
           </form>
+          <script>
+            console.log('eSewa Form Parameters:', ${JSON.stringify(params)});
+          </script>
         </body>
         </html>
       `;
@@ -106,6 +112,7 @@ export class ESewaPaymentService {
         message: 'Redirecting to eSewa payment gateway'
       };
     } catch (error) {
+      console.error('eSewa Payment Initiation Error:', error);
       return {
         success: false,
         message: 'Failed to initiate eSewa payment: ' + (error as Error).message
@@ -119,6 +126,8 @@ export class ESewaPaymentService {
     refId: string
   ): Promise<{ success: boolean; message: string }> {
     try {
+      console.log('Verifying eSewa Payment:', { orderId, amount, refId });
+      
       const response = await fetch('/api/verify-esewa-payment', {
         method: 'POST',
         headers: {
@@ -132,9 +141,12 @@ export class ESewaPaymentService {
         })
       });
 
+      console.log('Verification Response Status:', response.status);
       const result = await response.json();
+      console.log('Verification Result:', result);
       return result;
     } catch (error) {
+      console.error('Payment Verification Error:', error);
       return {
         success: false,
         message: 'Payment verification failed: ' + (error as Error).message

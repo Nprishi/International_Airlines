@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { ESewaPaymentService } from '../services/paymentService';
+import Swal from 'sweetalert2';
 
 const PaymentSuccess: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const [verificationStatus, setVerificationStatus] = useState<'verifying' | 'success' | 'failed'>('verifying');
   const [message, setMessage] = useState('Verifying your payment...');
 
@@ -27,32 +27,51 @@ const PaymentSuccess: React.FC = () => {
         console.log('Starting payment verification...');
         const result = await ESewaPaymentService.verifyPayment(oid, parseFloat(amt), refId);
         console.log('Verification result:', result);
-        
+
         if (result.success) {
           console.log('Payment verified successfully');
           setVerificationStatus('success');
           setMessage('Payment verified successfully!');
-          
-          // Store success status for parent window
+
           localStorage.setItem(`payment_${oid}`, 'success');
           console.log('Stored success status in localStorage');
-          
-          // Close window after 3 seconds
-          setTimeout(() => {
-            console.log('Closing payment window...');
-            window.close();
-          }, 3000);
+
+          await Swal.fire({
+            icon: 'success',
+            title: 'Payment Successful!',
+            text: 'Your payment has been verified successfully.',
+            confirmButtonColor: '#10b981',
+            timer: 2500,
+            timerProgressBar: true
+          });
+
+          console.log('Closing payment window...');
+          window.close();
         } else {
           console.error('Payment verification failed:', result.message);
           setVerificationStatus('failed');
           setMessage(result.message || 'Payment verification failed');
           localStorage.setItem(`payment_${oid}`, 'failed');
+
+          await Swal.fire({
+            icon: 'error',
+            title: 'Payment Failed',
+            text: result.message || 'Payment verification failed',
+            confirmButtonColor: '#ef4444'
+          });
         }
       } catch (error) {
         console.error('Payment verification error:', error);
         setVerificationStatus('failed');
         setMessage('Error verifying payment: ' + (error as Error).message);
         localStorage.setItem(`payment_${oid}`, 'failed');
+
+        await Swal.fire({
+          icon: 'error',
+          title: 'Verification Error',
+          text: 'Error verifying payment: ' + (error as Error).message,
+          confirmButtonColor: '#ef4444'
+        });
       }
     };
 

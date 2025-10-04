@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Shield, Clock, CheckCircle, AlertCircle, Loader } from 'lucide-react';
-import { ESewaPaymentService, PaymentServiceFactory, PaymentRequest } from '../services/paymentService';
+import React, { useState } from 'react';
+import { ArrowLeft, Shield, Clock } from 'lucide-react';
+import { ESewaPaymentService, PaymentRequest } from '../services/paymentService';
+import Swal from 'sweetalert2';
 
 interface PaymentConfirmationProps {
   paymentMethod: string;
@@ -28,9 +29,10 @@ const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
     pin: '',
     mobileNumber: '',
   });
+  const [otp, setOtp] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [step, setStep] = useState<'credentials' | 'processing' | 'success' | 'error'>('credentials');
+  const [step, setStep] = useState<'credentials' | 'otp' | 'processing' | 'success' | 'error'>('credentials');
 
   const getPaymentConfig = () => {
     switch (paymentMethod) {
@@ -73,16 +75,6 @@ const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
           idLabel: 'User ID',
           passwordLabel: 'Password',
           description: 'Enter your mobile banking credentials'
-        };
-      case 'connect-ips':
-        return {
-          name: 'ConnectIPS',
-          logo: '🔴',
-          color: 'red',
-          fields: ['id', 'password'],
-          idLabel: 'Bank User ID',
-          passwordLabel: 'Password',
-          description: 'Enter your bank account credentials for ConnectIPS'
         };
       default:
         return {
@@ -252,25 +244,62 @@ const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
     };
   };
 
-  const handlePayment = async () => {
+  const handleCredentialsSubmit = () => {
     if (!validateForm()) return;
+    setStep('otp');
+  };
+
+  const handleOtpSubmit = async () => {
+    if (!otp.trim()) {
+      setErrors({ otp: 'OTP is required' });
+      return;
+    }
+
+    if (otp !== '123456') {
+      Swal.fire({
+        icon: 'error',
+        title: 'Invalid OTP',
+        text: 'Please enter the correct OTP: 123456',
+        confirmButtonColor: '#3085d6'
+      });
+      return;
+    }
 
     setIsProcessing(true);
     setStep('processing');
 
     try {
-      const result = await simulatePaymentAPI();
-      setStep('success');
-      
-      // Auto redirect after 3 seconds
-      setTimeout(() => {
-        onSuccess();
-      }, 3000);
-    } catch (error) {
-      setStep('error');
-      setErrors({ general: error instanceof Error ? error.message : 'Payment failed' });
-    } finally {
+      await simulatePaymentAPI();
       setIsProcessing(false);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Payment Successful!',
+        text: `Your ${config.name} payment has been processed successfully.`,
+        confirmButtonColor: '#10b981',
+        timer: 3000,
+        timerProgressBar: true
+      }).then(() => {
+        onSuccess();
+      });
+    } catch (error) {
+      setIsProcessing(false);
+      Swal.fire({
+        icon: 'error',
+        title: 'Payment Failed',
+        text: error instanceof Error ? error.message : 'Payment failed. Please try again.',
+        confirmButtonColor: '#ef4444',
+        showCancelButton: true,
+        confirmButtonText: 'Try Again',
+        cancelButtonText: 'Cancel'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          setStep('credentials');
+          setOtp('');
+        } else {
+          onCancel();
+        }
+      });
     }
   };
 
@@ -381,12 +410,64 @@ const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
           Cancel
         </button>
         <button
-          onClick={handlePayment}
+          onClick={handleCredentialsSubmit}
           disabled={isProcessing}
           className={`flex-1 bg-${config.color}-600 text-white py-3 px-6 rounded-lg hover:bg-${config.color}-700 disabled:opacity-50 transition-colors flex items-center justify-center`}
         >
           <Shield className="h-4 w-4 mr-2" />
-          Pay Now
+          Continue to OTP
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderOtpForm = () => (
+    <div className="space-y-6">
+      <div className="text-center">
+        <div className={`text-6xl mb-4`}>{config.logo}</div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Enter OTP</h2>
+        <p className="text-gray-600 mb-4">Please enter the OTP sent to your registered device</p>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <p className="text-sm text-blue-800 font-medium">For testing, use OTP: <span className="font-bold text-lg">123456</span></p>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          One-Time Password (OTP)
+        </label>
+        <input
+          type="text"
+          value={otp}
+          onChange={(e) => {
+            setOtp(e.target.value.replace(/\D/g, ''));
+            if (errors.otp) setErrors({ ...errors, otp: '' });
+          }}
+          maxLength={6}
+          className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-${config.color}-500 text-center text-2xl tracking-widest ${errors.otp ? 'border-red-300' : 'border-gray-300'}`}
+          placeholder="000000"
+        />
+        {errors.otp && <p className="mt-1 text-sm text-red-600">{errors.otp}</p>}
+      </div>
+
+      <div className="flex space-x-4">
+        <button
+          onClick={() => {
+            setStep('credentials');
+            setOtp('');
+          }}
+          className="flex-1 bg-gray-500 text-white py-3 px-6 rounded-lg hover:bg-gray-600 transition-colors flex items-center justify-center"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </button>
+        <button
+          onClick={handleOtpSubmit}
+          disabled={isProcessing}
+          className={`flex-1 bg-${config.color}-600 text-white py-3 px-6 rounded-lg hover:bg-${config.color}-700 disabled:opacity-50 transition-colors flex items-center justify-center`}
+        >
+          <Shield className="h-4 w-4 mr-2" />
+          Verify & Pay
         </button>
       </div>
     </div>
@@ -407,51 +488,14 @@ const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
     </div>
   );
 
-  const renderSuccess = () => (
-    <div className="text-center space-y-6">
-      <div className="text-6xl mb-4">✅</div>
-      <CheckCircle className="h-16 w-16 text-green-600 mx-auto" />
-      <h2 className="text-2xl font-bold text-green-900">Payment Successful!</h2>
-      <p className="text-gray-600">Your {config.name} payment has been processed successfully.</p>
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-        <p className="text-sm font-medium text-green-800">Amount Paid: NPR {(amount * 133.25).toLocaleString()}</p>
-        <p className="text-xs text-green-600">Transaction ID: TXN{Date.now()}</p>
-      </div>
-      <p className="text-sm text-gray-500">Redirecting to confirmation page...</p>
-    </div>
-  );
-
-  const renderError = () => (
-    <div className="text-center space-y-6">
-      <div className="text-6xl mb-4">❌</div>
-      <AlertCircle className="h-16 w-16 text-red-600 mx-auto" />
-      <h2 className="text-2xl font-bold text-red-900">Payment Failed</h2>
-      <p className="text-gray-600">{errors.general}</p>
-      <div className="flex space-x-4">
-        <button
-          onClick={() => setStep('credentials')}
-          className="flex-1 bg-primary-600 text-white py-3 px-6 rounded-lg hover:bg-primary-700 transition-colors"
-        >
-          Try Again
-        </button>
-        <button
-          onClick={onCancel}
-          className="flex-1 bg-gray-500 text-white py-3 px-6 rounded-lg hover:bg-gray-600 transition-colors"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
       <div className="max-w-md w-full">
         <div className="bg-white rounded-lg shadow-xl p-8">
           {step === 'credentials' && renderCredentialsForm()}
+          {step === 'otp' && renderOtpForm()}
           {step === 'processing' && renderProcessing()}
-          {step === 'success' && renderSuccess()}
-          {step === 'error' && renderError()}
         </div>
       </div>
     </div>

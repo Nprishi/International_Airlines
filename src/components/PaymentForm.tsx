@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CreditCard, Lock, Calendar, User, Smartphone, Building, Wallet } from 'lucide-react';
+import { CreditCard, Lock, Calendar, User, Smartphone, Wallet } from 'lucide-react';
 import { useBooking } from '../contexts/BookingContext';
 import { useAuth } from '../contexts/AuthContext';
 import { PaymentDetails, TotalsSummary } from '../types';
@@ -125,11 +125,19 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
   };
 
   const isNepalPaymentMethod = (method: string) => {
-    return ['esewa', 'khalti', 'ime-pay', 'mobile-banking', 'connect-ips'].includes(method);
+    return ['esewa', 'khalti', 'ime-pay', 'mobile-banking'].includes(method);
   };
 
   const calculateTotal = (): TotalsSummary => {
-    
+    if (!selectedFlight) {
+      return {
+        subtotal: 0,
+        taxes: 0,
+        serviceFee: 0,
+        total: 0
+      };
+    }
+
     let total = selectedFlight.price * passengers.length;
     
     // Add seat fees
@@ -238,89 +246,94 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
             <div>
               <h3 className="text-lg font-semibold mb-4">Payment Method</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                  paymentData.method === 'credit-card' ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                }`}>
                   <input
                     type="radio"
                     name="paymentMethod"
                     value="credit-card"
                     checked={paymentData.method === 'credit-card'}
                     onChange={(e) => handleInputChange('method', e.target.value)}
-                    className="mr-3"
+                    className="mr-3 w-4 h-4 text-blue-600"
                   />
-                  <CreditCard className="h-5 w-5 mr-2" />
-                  Credit Card
+                  <CreditCard className="h-5 w-5 mr-2 text-gray-700" />
+                  <span className="font-medium">Credit Card</span>
                 </label>
-                <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+
+                <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                  paymentData.method === 'debit-card' ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                }`}>
                   <input
                     type="radio"
                     name="paymentMethod"
                     value="debit-card"
                     checked={paymentData.method === 'debit-card'}
                     onChange={(e) => handleInputChange('method', e.target.value)}
-                    className="mr-3"
+                    className="mr-3 w-4 h-4 text-blue-600"
                   />
-                  <CreditCard className="h-5 w-5 mr-2" />
-                  Debit Card
+                  <CreditCard className="h-5 w-5 mr-2 text-gray-700" />
+                  <span className="font-medium">Debit Card</span>
                 </label>
-                <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+
+                <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                  paymentData.method === 'esewa' ? 'border-green-500 bg-green-50 shadow-md' : 'border-gray-200 hover:border-green-200 hover:bg-green-50'
+                }`}>
                   <input
                     type="radio"
                     name="paymentMethod"
                     value="esewa"
                     checked={paymentData.method === 'esewa'}
                     onChange={(e) => handleInputChange('method', e.target.value)}
-                    className="mr-3"
+                    className="mr-3 w-4 h-4 text-green-600"
                   />
                   <Wallet className="h-5 w-5 mr-2 text-green-600" />
-                  eSewa
+                  <span className="font-medium text-green-700">eSewa</span>
                 </label>
-                <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+
+                <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                  paymentData.method === 'khalti' ? 'border-purple-500 bg-purple-50 shadow-md' : 'border-gray-200 hover:border-purple-200 hover:bg-purple-50'
+                }`}>
                   <input
                     type="radio"
                     name="paymentMethod"
                     value="khalti"
                     checked={paymentData.method === 'khalti'}
                     onChange={(e) => handleInputChange('method', e.target.value)}
-                    className="mr-3"
+                    className="mr-3 w-4 h-4 text-purple-600"
                   />
                   <Wallet className="h-5 w-5 mr-2 text-purple-600" />
-                  Khalti
+                  <span className="font-medium text-purple-700">Khalti</span>
                 </label>
-                <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+
+                <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                  paymentData.method === 'ime-pay' ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 hover:border-blue-200 hover:bg-blue-50'
+                }`}>
                   <input
                     type="radio"
                     name="paymentMethod"
                     value="ime-pay"
                     checked={paymentData.method === 'ime-pay'}
                     onChange={(e) => handleInputChange('method', e.target.value)}
-                    className="mr-3"
+                    className="mr-3 w-4 h-4 text-blue-600"
                   />
                   <Smartphone className="h-5 w-5 mr-2 text-blue-600" />
-                  IME Pay
+                  <span className="font-medium text-blue-700">IME Pay</span>
                 </label>
-                <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+
+                <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                  paymentData.method === 'mobile-banking' ? 'border-orange-500 bg-orange-50 shadow-md' : 'border-gray-200 hover:border-orange-200 hover:bg-orange-50'
+                }`}>
                   <input
                     type="radio"
                     name="paymentMethod"
                     value="mobile-banking"
                     checked={paymentData.method === 'mobile-banking'}
                     onChange={(e) => handleInputChange('method', e.target.value)}
-                    className="mr-3"
+                    className="mr-3 w-4 h-4 text-orange-600"
                   />
                   <Smartphone className="h-5 w-5 mr-2 text-orange-600" />
-                  Mobile Banking
-                </label>
-                <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="connect-ips"
-                    checked={paymentData.method === 'connect-ips'}
-                    onChange={(e) => handleInputChange('method', e.target.value)}
-                    className="mr-3"
-                  />
-                  <Building className="h-5 w-5 mr-2 text-red-600" />
-            className="px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center text-lg font-semibold"
+                  <span className="font-medium text-orange-700">Mobile Banking</span>
                 </label>
               </div>
             </div>

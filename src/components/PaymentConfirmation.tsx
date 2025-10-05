@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Shield, Clock } from 'lucide-react';
+import { ArrowLeft, Shield, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { ESewaPaymentService, PaymentRequest } from '../services/paymentService';
-import Swal from 'sweetalert2';
 
 interface PaymentConfirmationProps {
   paymentMethod: string;
@@ -33,6 +32,7 @@ const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [step, setStep] = useState<'credentials' | 'otp' | 'processing' | 'success' | 'error'>('credentials');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const getPaymentConfig = () => {
     switch (paymentMethod) {
@@ -256,12 +256,7 @@ const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
     }
 
     if (otp !== '123456') {
-      Swal.fire({
-        icon: 'error',
-        title: 'Invalid OTP',
-        text: 'Please enter the correct OTP: 123456',
-        confirmButtonColor: '#3085d6'
-      });
+      setErrors({ otp: 'Invalid OTP. Please enter: 123456' });
       return;
     }
 
@@ -271,35 +266,15 @@ const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
     try {
       await simulatePaymentAPI();
       setIsProcessing(false);
+      setStep('success');
 
-      Swal.fire({
-        icon: 'success',
-        title: 'Payment Successful!',
-        text: `Your ${config.name} payment has been processed successfully.`,
-        confirmButtonColor: '#10b981',
-        timer: 3000,
-        timerProgressBar: true
-      }).then(() => {
+      setTimeout(() => {
         onSuccess();
-      });
+      }, 3000);
     } catch (error) {
       setIsProcessing(false);
-      Swal.fire({
-        icon: 'error',
-        title: 'Payment Failed',
-        text: error instanceof Error ? error.message : 'Payment failed. Please try again.',
-        confirmButtonColor: '#ef4444',
-        showCancelButton: true,
-        confirmButtonText: 'Try Again',
-        cancelButtonText: 'Cancel'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          setStep('credentials');
-          setOtp('');
-        } else {
-          onCancel();
-        }
-      });
+      setErrorMessage(error instanceof Error ? error.message : 'Payment failed. Please try again.');
+      setStep('error');
     }
   };
 
@@ -488,6 +463,49 @@ const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
     </div>
   );
 
+  const renderSuccess = () => (
+    <div className="text-center space-y-6">
+      <div className="text-6xl mb-4">{config.logo}</div>
+      <CheckCircle className="h-16 w-16 text-green-600 mx-auto" />
+      <h2 className="text-2xl font-bold text-green-900">Payment Successful!</h2>
+      <p className="text-gray-600">Your {config.name} payment has been processed successfully.</p>
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <p className="text-sm font-medium text-green-800">Amount Paid: NPR {(amount * 133.25).toLocaleString()}</p>
+        <p className="text-xs text-green-600 mt-1">Transaction ID: TXN{Date.now()}</p>
+      </div>
+      <p className="text-sm text-gray-500">Redirecting to confirmation page...</p>
+    </div>
+  );
+
+  const renderError = () => (
+    <div className="text-center space-y-6">
+      <div className="text-6xl mb-4">{config.logo}</div>
+      <AlertCircle className="h-16 w-16 text-red-600 mx-auto" />
+      <h2 className="text-2xl font-bold text-red-900">Payment Failed</h2>
+      <p className="text-gray-600">{errorMessage}</p>
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-sm text-red-800">Please check your payment details and try again.</p>
+      </div>
+      <div className="flex space-x-4">
+        <button
+          onClick={() => {
+            setStep('credentials');
+            setOtp('');
+            setErrorMessage('');
+          }}
+          className="flex-1 bg-primary-600 text-white py-3 px-6 rounded-lg hover:bg-primary-700 transition-colors"
+        >
+          Try Again
+        </button>
+        <button
+          onClick={onCancel}
+          className="flex-1 bg-gray-500 text-white py-3 px-6 rounded-lg hover:bg-gray-600 transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
@@ -496,6 +514,8 @@ const PaymentConfirmation: React.FC<PaymentConfirmationProps> = ({
           {step === 'credentials' && renderCredentialsForm()}
           {step === 'otp' && renderOtpForm()}
           {step === 'processing' && renderProcessing()}
+          {step === 'success' && renderSuccess()}
+          {step === 'error' && renderError()}
         </div>
       </div>
     </div>

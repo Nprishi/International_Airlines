@@ -1,30 +1,15 @@
 import React, { useEffect } from 'react';
 import { AlertCircle, ArrowLeft } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import Swal from 'sweetalert2';
 
 const PaymentFailure: React.FC = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    const handlePaymentFailure = async () => {
-      console.log('Payment Failure Page - Parameters:', Object.fromEntries(searchParams));
-      const oid = searchParams.get('oid') || `payment_${Date.now()}`;
-      console.log('Storing failure status for:', oid);
-      localStorage.setItem(`payment_${oid}`, 'failed');
-
-      await Swal.fire({
-        icon: 'error',
-        title: 'Payment Failed',
-        text: 'Your payment could not be processed. Please try again or contact support if the problem persists.',
-        confirmButtonColor: '#ef4444',
-        confirmButtonText: 'Close Window'
-      });
-
-      window.close();
-    };
-
-    handlePaymentFailure();
+    console.log('Payment Failure Page - Parameters:', Object.fromEntries(searchParams));
+    const oid = searchParams.get('oid') || `payment_${Date.now()}`;
+    console.log('Storing failure status for:', oid);
+    localStorage.setItem(`payment_${oid}`, 'failed');
   }, [searchParams]);
 
   return (

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { ESewaPaymentService } from '../services/paymentService';
-import Swal from 'sweetalert2';
 
 const PaymentSuccess: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -36,42 +35,21 @@ const PaymentSuccess: React.FC = () => {
           localStorage.setItem(`payment_${oid}`, 'success');
           console.log('Stored success status in localStorage');
 
-          await Swal.fire({
-            icon: 'success',
-            title: 'Payment Successful!',
-            text: 'Your payment has been verified successfully.',
-            confirmButtonColor: '#10b981',
-            timer: 2500,
-            timerProgressBar: true
-          });
-
-          console.log('Closing payment window...');
-          window.close();
+          setTimeout(() => {
+            console.log('Closing payment window...');
+            window.close();
+          }, 3000);
         } else {
           console.error('Payment verification failed:', result.message);
           setVerificationStatus('failed');
           setMessage(result.message || 'Payment verification failed');
           localStorage.setItem(`payment_${oid}`, 'failed');
-
-          await Swal.fire({
-            icon: 'error',
-            title: 'Payment Failed',
-            text: result.message || 'Payment verification failed',
-            confirmButtonColor: '#ef4444'
-          });
         }
       } catch (error) {
         console.error('Payment verification error:', error);
         setVerificationStatus('failed');
         setMessage('Error verifying payment: ' + (error as Error).message);
         localStorage.setItem(`payment_${oid}`, 'failed');
-
-        await Swal.fire({
-          icon: 'error',
-          title: 'Verification Error',
-          text: 'Error verifying payment: ' + (error as Error).message,
-          confirmButtonColor: '#ef4444'
-        });
       }
     };
 

@@ -178,13 +178,17 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
     try {
       // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       setPaymentDetails(paymentData);
-      
+
       if (user) {
-        createBooking(user.id);
+        const booking = await createBooking(user.id);
+        if (!booking) {
+          setErrors({ general: 'Failed to create booking. Please try again.' });
+          return;
+        }
       }
-      
+
       onNext();
     } catch (error) {
       setErrors({ general: 'Payment processing failed. Please try again.' });
@@ -193,10 +197,14 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
     }
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     setPaymentDetails(paymentData);
     if (user) {
-      createBooking(user.id);
+      const booking = await createBooking(user.id);
+      if (!booking) {
+        setErrors({ general: 'Failed to create booking. Please try again.' });
+        return;
+      }
     }
     onNext();
   };

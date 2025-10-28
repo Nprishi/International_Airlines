@@ -2,7 +2,6 @@ import React from 'react';
 import { CheckCircle, Download, Mail, Calendar, MapPin, Users, Plane } from 'lucide-react';
 import { useBooking } from '../contexts/BookingContext';
 import { generateTicketPDF } from '../utils/ticketGenerator';
-import { mockFlights } from '../data/mockData';
 import { Link } from 'react-router-dom';
 
 const BookingConfirmation: React.FC = () => {

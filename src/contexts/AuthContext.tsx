@@ -102,6 +102,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signup = async (userData: Omit<User, 'id' | 'createdAt'> & { password: string }): Promise<boolean> => {
     setIsLoading(true);
     try {
+      console.log('Starting signup process for:', userData.email);
+
       const { data: existingUser } = await supabase
         .from('users')
         .select('id')
@@ -114,6 +116,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const fullName = `${userData.firstName} ${userData.lastName}`.trim();
+      console.log('Creating new user:', fullName, userData.email);
 
       const { data: newUser, error } = await supabase
         .from('users')
@@ -134,6 +137,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return false;
       }
 
+      console.log('User created successfully:', newUser.id);
+
       const user: User = {
         id: newUser.id,
         email: newUser.email,
@@ -145,6 +150,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setUser(user);
       localStorage.setItem('userId', newUser.id);
+      console.log('User logged in automatically');
       return true;
     } catch (error) {
       console.error('Signup error:', error);

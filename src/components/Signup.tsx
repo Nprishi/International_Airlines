@@ -74,9 +74,8 @@ const Signup: React.FC = () => {
       });
 
       if (success) {
-        // Show success message and redirect to login
-        alert('Account created successfully! Please login to continue.');
-        navigate('/login');
+        alert('Account created successfully! You are now logged in.');
+        navigate('/');
       } else {
         setErrors({ general: 'User with this email or phone already exists' });
       }

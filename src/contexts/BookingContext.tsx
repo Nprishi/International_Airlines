@@ -42,7 +42,10 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
   const [currentBooking, setCurrentBooking] = useState<Booking | null>(null);
 
   const createBooking = async (userId: string): Promise<Booking | null> => {
+    console.log('createBooking called with userId:', userId);
+
     if (!selectedFlight || passengers.length === 0) {
+      console.error('Missing booking information:', { selectedFlight, passengers });
       throw new Error('Missing required booking information');
     }
 
@@ -50,6 +53,16 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
       const totalAmount = calculateTotalAmount();
       const bookingReference = generatePNR();
       const primaryPassenger = passengers[0];
+
+      console.log('Booking details:', {
+        userId,
+        flightId: selectedFlight.id,
+        passengerName: `${primaryPassenger.firstName} ${primaryPassenger.lastName}`,
+        seats: selectedSeats.join(', '),
+        reference: bookingReference,
+        paymentMethod: paymentDetails?.method,
+        amount: totalAmount
+      });
 
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
@@ -76,6 +89,8 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
         return null;
       }
 
+      console.log('Booking created in database:', bookingData.id);
+
       const { data: settings } = await supabase
         .from('site_settings')
         .select('usd_to_npr_rate')
@@ -83,7 +98,8 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
 
       const exchangeRate = settings?.usd_to_npr_rate || 132.5;
 
-      await supabase.from('payments').insert([
+      console.log('Creating payment record...');
+      const { error: paymentError } = await supabase.from('payments').insert([
         {
           booking_id: bookingData.id,
           user_id: userId,
@@ -97,10 +113,23 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
         },
       ]);
 
-      await supabase
+      if (paymentError) {
+        console.error('Payment record creation error:', paymentError);
+      } else {
+        console.log('Payment record created successfully');
+      }
+
+      console.log('Updating flight seats...');
+      const { error: updateError } = await supabase
         .from('flights')
         .update({ available_seats: selectedFlight.availableSeats - passengers.length })
         .eq('id', selectedFlight.id);
+
+      if (updateError) {
+        console.error('Flight seat update error:', updateError);
+      } else {
+        console.log('Flight seats updated successfully');
+      }
 
       const booking: Booking = {
         id: bookingData.id,
@@ -116,6 +145,7 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
       };
 
       setCurrentBooking(booking);
+      console.log('Booking object set in context:', booking);
       return booking;
     } catch (error) {
       console.error('Booking error:', error);

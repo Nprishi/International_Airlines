@@ -21,6 +21,8 @@ const MyBookings: React.FC = () => {
   const loadBookings = async () => {
     if (!user) return;
 
+    console.log('Loading bookings for user:', user.id);
+
     try {
       const { data, error } = await supabase
         .from('bookings')
@@ -35,6 +37,8 @@ const MyBookings: React.FC = () => {
         console.error('Error loading bookings:', error);
         setBookings([]);
       } else {
+        console.log('Bookings loaded:', data?.length || 0);
+        console.log('Booking data:', data);
         setBookings(data || []);
       }
     } catch (error) {

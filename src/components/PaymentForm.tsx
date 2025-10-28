@@ -174,38 +174,61 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
     if (!validateForm()) return;
 
     setIsProcessing(true);
-    
+
     try {
+      console.log('Processing card payment...', paymentData.method);
+
+      // Set payment details first
+      setPaymentDetails(paymentData);
+
       // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      setPaymentDetails(paymentData);
-
       if (user) {
+        console.log('Creating booking for user:', user.id);
         const booking = await createBooking(user.id);
         if (!booking) {
+          console.error('Booking creation failed');
           setErrors({ general: 'Failed to create booking. Please try again.' });
+          setIsProcessing(false);
           return;
         }
+        console.log('Booking created successfully:', booking.pnr);
+      } else {
+        console.error('No user found');
+        setErrors({ general: 'User not logged in. Please log in and try again.' });
+        setIsProcessing(false);
+        return;
       }
 
+      setIsProcessing(false);
       onNext();
     } catch (error) {
+      console.error('Payment processing error:', error);
       setErrors({ general: 'Payment processing failed. Please try again.' });
-    } finally {
       setIsProcessing(false);
     }
   };
 
   const handlePaymentSuccess = async () => {
+    console.log('Payment success for Nepal payment method:', paymentData.method);
     setPaymentDetails(paymentData);
+
     if (user) {
+      console.log('Creating booking for user:', user.id);
       const booking = await createBooking(user.id);
       if (!booking) {
+        console.error('Booking creation failed');
         setErrors({ general: 'Failed to create booking. Please try again.' });
         return;
       }
+      console.log('Booking created successfully:', booking.pnr);
+    } else {
+      console.error('No user found');
+      setErrors({ general: 'User not logged in. Please log in and try again.' });
+      return;
     }
+
     onNext();
   };
 

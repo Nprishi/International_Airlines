@@ -31,37 +31,55 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .eq('role', 'admin')
-      .eq('status', 'active')
-      .maybeSingle();
+    try {
+      console.log('Attempting admin login with email:', email);
 
-    if (error || !user) {
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .eq('role', 'admin')
+        .eq('status', 'active')
+        .maybeSingle();
+
+      console.log('Query result:', { user, error });
+
+      if (error) {
+        console.error('Database error:', error);
+        return false;
+      }
+
+      if (!user) {
+        console.log('No admin user found with this email');
+        return false;
+      }
+
+      if (password !== 'adminself') {
+        console.log('Password mismatch');
+        return false;
+      }
+
+      console.log('Login successful!');
+
+      const adminUser: AdminUser = {
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        role: user.role,
+      };
+
+      await supabase
+        .from('users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', user.id);
+
+      setAdmin(adminUser);
+      localStorage.setItem('admin', JSON.stringify(adminUser));
+      return true;
+    } catch (err) {
+      console.error('Login error:', err);
       return false;
     }
-
-    if (password !== 'adminself') {
-      return false;
-    }
-
-    const adminUser: AdminUser = {
-      id: user.id,
-      email: user.email,
-      full_name: user.full_name,
-      role: user.role,
-    };
-
-    await supabase
-      .from('users')
-      .update({ last_login: new Date().toISOString() })
-      .eq('id', user.id);
-
-    setAdmin(adminUser);
-    localStorage.setItem('admin', JSON.stringify(adminUser));
-    return true;
   };
 
   const logout = async () => {

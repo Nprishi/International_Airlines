@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit2, Trash2, User } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, User, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -43,13 +43,17 @@ const UserManagement = () => {
   }, [searchTerm, users]);
 
   const loadUsers = async () => {
+    console.log('Loading users from database...');
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (!error && data) {
-      setUsers(data);
+    if (error) {
+      console.error('Error loading users:', error);
+    } else {
+      console.log('Loaded users:', data?.length);
+      setUsers(data || []);
     }
   };
 
@@ -105,13 +109,22 @@ const UserManagement = () => {
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900">{t('admin.users')}</h2>
-          <button
-            onClick={handleAdd}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            {t('users.add')}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={loadUsers}
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <RefreshCw className="h-5 w-5 mr-2" />
+              Refresh
+            </button>
+            <button
+              onClick={handleAdd}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              {t('users.add')}
+            </button>
+          </div>
         </div>
 
         <div className="mb-6">

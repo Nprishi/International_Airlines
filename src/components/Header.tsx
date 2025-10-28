@@ -20,27 +20,27 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="bg-white shadow-lg sticky top-0 z-50">
+    <header className="bg-gradient-to-r from-gray-900 via-blue-900 to-gray-900 shadow-lg sticky top-0 z-50 border-b-2 border-cyan-500 scanlines">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <Plane className="h-8 w-8 text-primary-600" />
-            <span className="text-xl font-bold text-gray-900">International Airlines</span>
+          <Link to="/" className="flex items-center space-x-2 group">
+            <Plane className="h-8 w-8 text-cyan-400 floating-element" />
+            <span className="text-xl font-bold holographic-text">International Airlines</span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link to="/flights" className="text-gray-700 hover:text-primary-600 transition-colors">
+            <Link to="/flights" className="text-cyan-300 hover:text-cyan-400 transition-colors font-semibold hover:neon-text">
               Flights
             </Link>
-            <Link to="/my-bookings" className="text-gray-700 hover:text-primary-600 transition-colors">
+            <Link to="/my-bookings" className="text-cyan-300 hover:text-cyan-400 transition-colors font-semibold hover:neon-text">
               My Bookings
             </Link>
-            <Link to="/check-in" className="text-gray-700 hover:text-primary-600 transition-colors">
+            <Link to="/check-in" className="text-cyan-300 hover:text-cyan-400 transition-colors font-semibold hover:neon-text">
               Check-in
             </Link>
-            <Link to="/support" className="text-gray-700 hover:text-primary-600 transition-colors">
+            <Link to="/support" className="text-cyan-300 hover:text-cyan-400 transition-colors font-semibold hover:neon-text">
               Support
             </Link>
           </nav>
@@ -116,13 +116,13 @@ const Header: React.FC = () => {
               <div className="flex items-center space-x-4">
                 <Link
                   to="/select-login"
-                  className="text-gray-700 hover:text-primary-600 transition-colors"
+                  className="text-cyan-300 hover:text-cyan-400 transition-colors font-semibold neon-border px-4 py-2 rounded-md"
                 >
                   Login
                 </Link>
                 <Link
                   to="/select-signup"
-                  className="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 transition-colors"
+                  className="cyber-button rounded-md"
                 >
                   Sign Up
                 </Link>

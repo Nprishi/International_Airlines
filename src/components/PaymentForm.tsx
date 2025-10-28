@@ -181,8 +181,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
       // Set payment details first
       setPaymentDetails(paymentData);
 
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Simulate payment processing (reduced to 500ms)
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       if (user) {
         console.log('Creating booking for user:', user.id);

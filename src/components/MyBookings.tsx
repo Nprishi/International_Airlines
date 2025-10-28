@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Clock, Users, Download, Mail } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Download, Mail, XCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { generateTicketPDF } from '../utils/ticketGenerator';
 import { supabase } from '../lib/supabase';
@@ -75,10 +75,56 @@ const MyBookings: React.FC = () => {
         return 'bg-green-100 text-green-800';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
+      case 'pending_cancellation':
+        return 'bg-orange-100 text-orange-800';
       case 'cancelled':
         return 'bg-red-100 text-red-800';
+      case 'completed':
+        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handleCancelBooking = async (booking: any) => {
+    if (booking.status === 'cancelled') {
+      alert('This booking is already cancelled.');
+      return;
+    }
+
+    if (booking.status === 'completed') {
+      alert('Cannot cancel a completed flight.');
+      return;
+    }
+
+    const confirmCancel = confirm(
+      `Are you sure you want to cancel this booking?\n\n` +
+      `Flight: ${booking.flight?.flight_number}\n` +
+      `Booking Reference: ${booking.booking_reference}\n\n` +
+      `You will be notified once the admin processes your cancellation request.`
+    );
+
+    if (!confirmCancel) return;
+
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({
+          cancelled_by_user: true,
+          status: 'pending_cancellation'
+        })
+        .eq('id', booking.id);
+
+      if (error) {
+        console.error('Error requesting cancellation:', error);
+        alert('Failed to request cancellation. Please try again.');
+      } else {
+        alert('Cancellation request submitted successfully. An admin will process your request shortly.');
+        loadBookings();
+      }
+    } catch (error) {
+      console.error('Error requesting cancellation:', error);
+      alert('Failed to request cancellation. Please try again.');
     }
   };
 
@@ -244,21 +290,38 @@ const MyBookings: React.FC = () => {
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-2">
-                        <button 
+                        <button
                           onClick={() => handleDownloadTicket(booking)}
                           className="flex-1 bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 transition-colors flex items-center justify-center text-sm"
+                          disabled={booking.status === 'cancelled'}
                         >
                           <Download className="h-4 w-4 mr-2" />
                           Download E-Ticket
                         </button>
-                        <button className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center text-sm">
+                        <button className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center text-sm"
+                          disabled={booking.status === 'cancelled'}
+                        >
                           <Mail className="h-4 w-4 mr-2" />
                           Email Confirmation
                         </button>
-                        <button className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors flex items-center justify-center text-sm">
-                          <Calendar className="h-4 w-4 mr-2" />
-                          Check-in
-                        </button>
+                        {booking.status !== 'cancelled' && booking.status !== 'completed' && booking.status !== 'pending_cancellation' && (
+                          <button
+                            onClick={() => handleCancelBooking(booking)}
+                            className="flex-1 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors flex items-center justify-center text-sm"
+                          >
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Cancel Booking
+                          </button>
+                        )}
+                        {booking.status === 'pending_cancellation' && (
+                          <button
+                            disabled
+                            className="flex-1 bg-orange-400 text-white py-2 px-4 rounded-md cursor-not-allowed flex items-center justify-center text-sm"
+                          >
+                            <Clock className="h-4 w-4 mr-2" />
+                            Cancellation Pending
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

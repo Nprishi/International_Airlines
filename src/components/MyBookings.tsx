@@ -2,26 +2,51 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Clock, Users, Download, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { generateTicketPDF } from '../utils/ticketGenerator';
+import { supabase } from '../lib/supabase';
 import { Booking } from '../types';
-import { mockFlights } from '../data/mockData';
 
 const MyBookings: React.FC = () => {
   const { user } = useAuth();
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
-      // Get bookings from localStorage
-      const allBookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-      const userBookings = allBookings.filter((booking: Booking) => booking.userId === user.id);
-      setBookings(userBookings);
+      loadBookings();
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, [user]);
 
-  const getFlightDetails = (flightId: string) => {
-    return mockFlights.find(flight => flight.id === flightId);
+  const loadBookings = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          flight:flights(*)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading bookings:', error);
+        setBookings([]);
+      } else {
+        setBookings(data || []);
+      }
+    } catch (error) {
+      console.error('Error loading bookings:', error);
+      setBookings([]);
+    }
+
+    setLoading(false);
+  };
+
+  const getFlightDetails = (booking: any) => {
+    return booking.flight;
   };
 
   const formatTime = (dateString: string) => {
@@ -53,13 +78,37 @@ const MyBookings: React.FC = () => {
     }
   };
 
-  const handleDownloadTicket = (booking: Booking) => {
-    const flight = getFlightDetails(booking.flightId);
+  const handleDownloadTicket = (booking: any) => {
+    const flight = getFlightDetails(booking);
     if (flight) {
       generateTicketPDF({
-        booking: booking,
-        flight: flight,
-        passengers: booking.passengers
+        booking: {
+          id: booking.id,
+          userId: booking.user_id,
+          flightId: booking.flight_id,
+          passengers: [{ id: '1', title: 'Mr', firstName: booking.passenger_name.split(' ')[0], lastName: booking.passenger_name.split(' ').slice(1).join(' '), email: booking.passenger_email, phone: booking.passenger_phone, dateOfBirth: '', passportNumber: '', nationality: '' }],
+          seats: booking.seat_number.split(', '),
+          totalAmount: Number(booking.total_amount),
+          status: booking.status,
+          bookingDate: booking.created_at,
+          paymentMethod: booking.payment_method,
+          pnr: booking.booking_reference,
+        },
+        flight: {
+          id: flight.id,
+          flightNumber: flight.flight_number,
+          airline: flight.airline,
+          from: flight.from_location,
+          to: flight.to_location,
+          departureTime: flight.departure_time,
+          arrivalTime: flight.arrival_time,
+          price: Number(flight.price),
+          duration: '',
+          class: 'Economy',
+          availableSeats: flight.available_seats,
+          aircraft: flight.aircraft_type,
+        },
+        passengers: [{ id: '1', title: 'Mr', firstName: booking.passenger_name.split(' ')[0], lastName: booking.passenger_name.split(' ').slice(1).join(' '), email: booking.passenger_email, phone: booking.passenger_phone, dateOfBirth: '', passportNumber: '', nationality: '' }]
       });
     }
   };
@@ -105,7 +154,7 @@ const MyBookings: React.FC = () => {
         ) : (
           <div className="space-y-6">
             {bookings.map((booking) => {
-              const flight = getFlightDetails(booking.flightId);
+              const flight = getFlightDetails(booking);
               if (!flight) return null;
 
               return (
@@ -115,33 +164,33 @@ const MyBookings: React.FC = () => {
                       <div className="flex items-center space-x-4 mb-4 lg:mb-0">
                         <div className="text-center">
                           <div className="text-xl font-bold text-gray-900">
-                            {formatTime(flight.departureTime)}
+                            {formatTime(flight.departure_time)}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {flight.from.split('(')[1]?.replace(')', '')}
+                            {flight.from_location.split('(')[1]?.replace(')', '')}
                           </div>
                         </div>
-                        
+
                         <div className="flex-1 px-4">
                           <div className="flex items-center justify-center">
                             <div className="flex-1 border-t border-gray-300"></div>
                             <div className="px-3 text-sm text-gray-500">
                               <Clock className="h-4 w-4 inline mr-1" />
-                              {flight.duration}
+                              {Math.floor((new Date(flight.arrival_time).getTime() - new Date(flight.departure_time).getTime()) / 3600000)}h
                             </div>
                             <div className="flex-1 border-t border-gray-300"></div>
                           </div>
                           <div className="text-center text-xs text-gray-400 mt-1">
-                            {flight.flightNumber}
+                            {flight.flight_number}
                           </div>
                         </div>
                         
                         <div className="text-center">
                           <div className="text-xl font-bold text-gray-900">
-                            {formatTime(flight.arrivalTime)}
+                            {formatTime(flight.arrival_time)}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {flight.to.split('(')[1]?.replace(')', '')}
+                            {flight.to_location.split('(')[1]?.replace(')', '')}
                           </div>
                         </div>
                       </div>
@@ -152,7 +201,7 @@ const MyBookings: React.FC = () => {
                         </span>
                         <div className="text-right">
                           <div className="text-lg font-bold text-primary-600">
-                            ${booking.totalAmount.toFixed(2)}
+                            ${booking.total_amount.toFixed(2)}
                           </div>
                           <div className="text-xs text-gray-500">Total paid</div>
                         </div>
@@ -163,32 +212,30 @@ const MyBookings: React.FC = () => {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                         <div>
                           <p className="text-sm text-gray-600">Booking Reference</p>
-                          <p className="font-medium">{booking.pnr}</p>
+                          <p className="font-medium">{booking.booking_reference}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600">Passengers</p>
+                          <p className="text-sm text-gray-600">Passenger</p>
                           <p className="font-medium flex items-center">
                             <Users className="h-4 w-4 mr-1" />
-                            {booking.passengers.length}
+                            {booking.passenger_name}
                           </p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-600">Booking Date</p>
-                          <p className="font-medium">{formatDate(booking.bookingDate)}</p>
+                          <p className="font-medium">{formatDate(booking.created_at)}</p>
                         </div>
                       </div>
 
                       <div className="mb-4">
-                        <p className="text-sm text-gray-600 mb-2">Passengers & Seats</p>
+                        <p className="text-sm text-gray-600 mb-2">Passenger & Seat</p>
                         <div className="space-y-1">
-                          {booking.passengers.map((passenger, index) => (
-                            <div key={passenger.id} className="flex justify-between text-sm">
-                              <span>{passenger.firstName} {passenger.lastName}</span>
-                              <span className="text-gray-600">
-                                Seat {booking.seats[index] || 'Not assigned'}
-                              </span>
-                            </div>
-                          ))}
+                          <div className="flex justify-between text-sm">
+                            <span>{booking.passenger_name}</span>
+                            <span className="text-gray-600">
+                              Seat {booking.seat_number}
+                            </span>
+                          </div>
                         </div>
                       </div>
 

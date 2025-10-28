@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { supabase } from '../lib/supabase';
 import { Flight, SearchFilters, Passenger, Booking, PaymentDetails } from '../types';
 
 interface BookingContextType {
@@ -8,13 +9,13 @@ interface BookingContextType {
   selectedSeats: string[];
   paymentDetails: PaymentDetails | null;
   currentBooking: Booking | null;
-  
+
   setSearchFilters: (filters: SearchFilters) => void;
   setSelectedFlight: (flight: Flight) => void;
   setPassengers: (passengers: Passenger[]) => void;
   setSelectedSeats: (seats: string[]) => void;
   setPaymentDetails: (payment: PaymentDetails) => void;
-  createBooking: (userId: string) => Booking;
+  createBooking: (userId: string) => Promise<Booking | null>;
   clearBooking: () => void;
 }
 
@@ -40,43 +41,97 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [currentBooking, setCurrentBooking] = useState<Booking | null>(null);
 
-  const createBooking = (userId: string): Booking => {
+  const createBooking = async (userId: string): Promise<Booking | null> => {
     if (!selectedFlight || passengers.length === 0) {
       throw new Error('Missing required booking information');
     }
 
-    const booking: Booking = {
-      id: Date.now().toString(),
-      userId,
-      flightId: selectedFlight.id,
-      passengers,
-      seats: selectedSeats,
-      totalAmount: calculateTotalAmount(),
-      status: 'confirmed',
-      bookingDate: new Date().toISOString(),
-      paymentMethod: paymentDetails?.method || 'credit-card',
-      pnr: generatePNR(),
-    };
+    try {
+      const totalAmount = calculateTotalAmount();
+      const bookingReference = generatePNR();
+      const primaryPassenger = passengers[0];
 
-    // Save booking to localStorage
-    const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-    bookings.push(booking);
-    localStorage.setItem('bookings', JSON.stringify(bookings));
+      const { data: bookingData, error: bookingError } = await supabase
+        .from('bookings')
+        .insert([
+          {
+            user_id: userId,
+            flight_id: selectedFlight.id,
+            passenger_name: `${primaryPassenger.firstName} ${primaryPassenger.lastName}`,
+            passenger_email: primaryPassenger.email,
+            passenger_phone: primaryPassenger.phone,
+            seat_number: selectedSeats.join(', '),
+            booking_reference: bookingReference,
+            payment_status: 'completed',
+            payment_method: paymentDetails?.method || 'credit-card',
+            total_amount: totalAmount,
+            status: 'confirmed',
+          },
+        ])
+        .select()
+        .single();
 
-    setCurrentBooking(booking);
-    return booking;
+      if (bookingError) {
+        console.error('Booking creation error:', bookingError);
+        return null;
+      }
+
+      const { data: settings } = await supabase
+        .from('site_settings')
+        .select('usd_to_npr_rate')
+        .maybeSingle();
+
+      const exchangeRate = settings?.usd_to_npr_rate || 132.5;
+
+      await supabase.from('payments').insert([
+        {
+          booking_id: bookingData.id,
+          user_id: userId,
+          amount_usd: totalAmount,
+          amount_npr: totalAmount * exchangeRate,
+          exchange_rate: exchangeRate,
+          payment_method: paymentDetails?.method || 'credit-card',
+          payment_gateway: 'stripe',
+          transaction_id: `TXN-${Date.now()}`,
+          status: 'completed',
+        },
+      ]);
+
+      await supabase
+        .from('flights')
+        .update({ available_seats: selectedFlight.availableSeats - passengers.length })
+        .eq('id', selectedFlight.id);
+
+      const booking: Booking = {
+        id: bookingData.id,
+        userId,
+        flightId: selectedFlight.id,
+        passengers,
+        seats: selectedSeats,
+        totalAmount,
+        status: 'confirmed',
+        bookingDate: bookingData.created_at,
+        paymentMethod: paymentDetails?.method || 'credit-card',
+        pnr: bookingReference,
+      };
+
+      setCurrentBooking(booking);
+      return booking;
+    } catch (error) {
+      console.error('Booking error:', error);
+      return null;
+    }
   };
 
   const calculateTotalAmount = (): number => {
     if (!selectedFlight) return 0;
-    
+
     let total = selectedFlight.price * passengers.length;
-    
-    // Add seat selection fees if any
+
     selectedSeats.forEach(seat => {
-      if (seat.includes('A') || seat.includes('F')) { // Window seats
+      if (seat.includes('A') || seat.includes('F')) {
         total += 25;
-      } else if (seat.includes('C') || seat.includes('D')) { // Aisle seats
+      } else if (seat.includes('C') || seat.includes('D')) {
         total += 15;
       }
     });

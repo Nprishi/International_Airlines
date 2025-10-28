@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Clock, Plane, Users, ArrowLeft, Wifi, Coffee, Tv, Star } from 'lucide-react';
 import { useBooking } from '../contexts/BookingContext';
 import CurrencyDisplay from './CurrencyDisplay';
-import { mockFlights } from '../data/mockData';
+import { supabase } from '../lib/supabase';
 import { Flight } from '../types';
 
 interface FlightListProps {
@@ -15,28 +15,66 @@ const FlightList: React.FC<FlightListProps> = ({ onNext }) => {
   const { searchFilters, setSelectedFlight } = useBooking();
 
   useEffect(() => {
-    // Simulate API call
     const searchFlights = async () => {
       setLoading(true);
-      
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (searchFilters) {
-        // Filter flights based on search criteria
-        const filteredFlights = mockFlights.filter(flight => 
-          flight.from === searchFilters.from &&
-          flight.to === searchFilters.to &&
-          flight.class === searchFilters.class
-        );
-        setFlights(filteredFlights);
+
+      try {
+        let query = supabase
+          .from('flights')
+          .select('*')
+          .eq('status', 'scheduled')
+          .gt('available_seats', 0)
+          .order('departure_time', { ascending: true });
+
+        if (searchFilters) {
+          if (searchFilters.from) {
+            query = query.ilike('from_location', `%${searchFilters.from}%`);
+          }
+          if (searchFilters.to) {
+            query = query.ilike('to_location', `%${searchFilters.to}%`);
+          }
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          console.error('Error fetching flights:', error);
+          setFlights([]);
+        } else if (data) {
+          const mappedFlights: Flight[] = data.map((f: any) => ({
+            id: f.id,
+            flightNumber: f.flight_number,
+            airline: f.airline,
+            from: f.from_location,
+            to: f.to_location,
+            departureTime: f.departure_time,
+            arrivalTime: f.arrival_time,
+            price: Number(f.price),
+            duration: calculateDuration(f.departure_time, f.arrival_time),
+            class: searchFilters?.class || 'Economy',
+            availableSeats: f.available_seats,
+            totalSeats: f.total_seats,
+            aircraft: f.aircraft_type,
+          }));
+          setFlights(mappedFlights);
+        }
+      } catch (error) {
+        console.error('Error fetching flights:', error);
+        setFlights([]);
       }
-      
+
       setLoading(false);
     };
 
     searchFlights();
   }, [searchFilters]);
+
+  const calculateDuration = (departure: string, arrival: string): string => {
+    const diff = new Date(arrival).getTime() - new Date(departure).getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${minutes}m`;
+  };
 
   const handleSelectFlight = (flight: Flight) => {
     setSelectedFlight(flight);

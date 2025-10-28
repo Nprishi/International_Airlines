@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '../lib/supabase';
 import { User } from '../types';
 
 interface AuthContextType {
@@ -6,7 +7,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   signup: (userData: Omit<User, 'id' | 'createdAt'> & { password: string }) => Promise<boolean>;
   logout: () => void;
-  updateProfile: (userData: Partial<User>) => void;
+  updateProfile: (userData: Partial<User>) => Promise<boolean>;
   isLoading: boolean;
 }
 
@@ -29,30 +30,67 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in on app start
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    checkUser();
+  }, []);
+
+  const checkUser = async () => {
+    const storedUserId = localStorage.getItem('userId');
+    if (storedUserId) {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', storedUserId)
+        .eq('role', 'user')
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (!error && data) {
+        setUser({
+          id: data.id,
+          email: data.email,
+          firstName: data.full_name.split(' ')[0] || data.full_name,
+          lastName: data.full_name.split(' ').slice(1).join(' ') || '',
+          phone: data.phone || '',
+          createdAt: data.created_at,
+        });
+      }
     }
     setIsLoading(false);
-  }, []);
+  };
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Get users from localStorage
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const foundUser = users.find((u: any) => 
-        (u.email === email || u.phone === email) && u.password === password
-      );
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .eq('role', 'user')
+        .eq('status', 'active')
+        .maybeSingle();
 
-      if (foundUser) {
-        const { password: _, ...userWithoutPassword } = foundUser;
-        setUser(userWithoutPassword);
-        localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
-        return true;
+      if (error || !userData) {
+        console.log('User not found or error:', error);
+        return false;
       }
-      return false;
+
+      const user: User = {
+        id: userData.id,
+        email: userData.email,
+        firstName: userData.full_name.split(' ')[0] || userData.full_name,
+        lastName: userData.full_name.split(' ').slice(1).join(' ') || '',
+        phone: userData.phone || '',
+        createdAt: userData.created_at,
+      };
+
+      await supabase
+        .from('users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', userData.id);
+
+      setUser(user);
+      localStorage.setItem('userId', userData.id);
+      return true;
     } catch (error) {
       console.error('Login error:', error);
       return false;
@@ -64,31 +102,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signup = async (userData: Omit<User, 'id' | 'createdAt'> & { password: string }): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Get existing users
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      
-      // Check if user already exists
-      const existingUser = users.find((u: any) => u.email === userData.email || u.phone === userData.phone);
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', userData.email)
+        .maybeSingle();
+
       if (existingUser) {
+        console.log('User already exists');
         return false;
       }
 
-      // Create new user
-      const newUser = {
-        ...userData,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
+      const fullName = `${userData.firstName} ${userData.lastName}`.trim();
+
+      const { data: newUser, error } = await supabase
+        .from('users')
+        .insert([
+          {
+            email: userData.email,
+            full_name: fullName,
+            phone: userData.phone,
+            role: 'user',
+            status: 'active',
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Signup error:', error);
+        return false;
+      }
+
+      const user: User = {
+        id: newUser.id,
+        email: newUser.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        phone: userData.phone,
+        createdAt: newUser.created_at,
       };
 
-      // Save to localStorage
-      users.push(newUser);
-      localStorage.setItem('users', JSON.stringify(users));
-
-      // Auto login after signup
-      const { password: _, ...userWithoutPassword } = newUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
-      
+      setUser(user);
+      localStorage.setItem('userId', newUser.id);
       return true;
     } catch (error) {
       console.error('Signup error:', error);
@@ -100,22 +156,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('currentUser');
+    localStorage.removeItem('userId');
   };
 
-  const updateProfile = (userData: Partial<User>) => {
-    if (user) {
-      const updatedUser = { ...user, ...userData };
-      setUser(updatedUser);
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-      
-      // Update in users array
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const userIndex = users.findIndex((u: any) => u.id === user.id);
-      if (userIndex !== -1) {
-        users[userIndex] = { ...users[userIndex], ...userData };
-        localStorage.setItem('users', JSON.stringify(users));
+  const updateProfile = async (userData: Partial<User>): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const updates: any = {};
+
+      if (userData.firstName || userData.lastName) {
+        const firstName = userData.firstName || user.firstName;
+        const lastName = userData.lastName || user.lastName;
+        updates.full_name = `${firstName} ${lastName}`.trim();
       }
+
+      if (userData.phone !== undefined) {
+        updates.phone = userData.phone;
+      }
+
+      const { error } = await supabase
+        .from('users')
+        .update(updates)
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Update profile error:', error);
+        return false;
+      }
+
+      setUser({ ...user, ...userData });
+      return true;
+    } catch (error) {
+      console.error('Update profile error:', error);
+      return false;
     }
   };
 

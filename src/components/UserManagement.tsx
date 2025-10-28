@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit2, Trash2, User, RefreshCw } from 'lucide-react';
+import { Search, Plus, Edit2, User, RefreshCw, Ban, Clock, Unlock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface UserData {
   id: string;
   email: string;
-  full_name: string;
+  name: string;
   phone: string;
   role: 'admin' | 'user';
   status: 'active' | 'suspended' | 'deleted';
   created_at: string;
   last_login: string | null;
+  blocked: boolean;
+  suspended_until: string | null;
+  blocked_reason: string | null;
+  suspended_reason: string | null;
 }
 
 const UserManagement = () => {
@@ -20,13 +24,16 @@ const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [showSuspendModal, setShowSuspendModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [blockReason, setBlockReason] = useState('');
+  const [suspendReason, setSuspendReason] = useState('');
+  const [suspendDays, setSuspendDays] = useState(7);
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
     email: '',
-    full_name: '',
-    phone: '',
     role: 'user' as 'admin' | 'user',
-    status: 'active' as 'active' | 'suspended' | 'deleted',
   });
 
   useEffect(() => {
@@ -37,7 +44,7 @@ const UserManagement = () => {
     const filtered = users.filter(
       (user) =>
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.full_name.toLowerCase().includes(searchTerm.toLowerCase())
+        user.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredUsers(filtered);
   }, [searchTerm, users]);
@@ -61,10 +68,7 @@ const UserManagement = () => {
     setEditingUser(null);
     setFormData({
       email: '',
-      full_name: '',
-      phone: '',
       role: 'user',
-      status: 'active',
     });
     setShowModal(true);
   };
@@ -73,19 +77,69 @@ const UserManagement = () => {
     setEditingUser(user);
     setFormData({
       email: user.email,
-      full_name: user.full_name,
-      phone: user.phone,
       role: user.role,
-      status: user.status,
     });
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this user?')) {
-      await supabase.from('users').delete().eq('id', id);
-      loadUsers();
+  const handleBlock = (user: UserData) => {
+    setSelectedUser(user);
+    setBlockReason('');
+    setShowBlockModal(true);
+  };
+
+  const handleSuspend = (user: UserData) => {
+    setSelectedUser(user);
+    setSuspendReason('');
+    setSuspendDays(7);
+    setShowSuspendModal(true);
+  };
+
+  const handleUnblock = async (userId: string) => {
+    await supabase
+      .from('users')
+      .update({ blocked: false, blocked_reason: null })
+      .eq('id', userId);
+    loadUsers();
+  };
+
+  const handleUnsuspend = async (userId: string) => {
+    await supabase
+      .from('users')
+      .update({ suspended_until: null, suspended_reason: null })
+      .eq('id', userId);
+    loadUsers();
+  };
+
+  const confirmBlock = async () => {
+    if (!selectedUser || !blockReason.trim()) {
+      alert('Please provide a reason for blocking');
+      return;
     }
+    await supabase
+      .from('users')
+      .update({ blocked: true, blocked_reason: blockReason })
+      .eq('id', selectedUser.id);
+    setShowBlockModal(false);
+    loadUsers();
+  };
+
+  const confirmSuspend = async () => {
+    if (!selectedUser || !suspendReason.trim()) {
+      alert('Please provide a reason for suspension');
+      return;
+    }
+    const suspendUntil = new Date();
+    suspendUntil.setDate(suspendUntil.getDate() + suspendDays);
+    await supabase
+      .from('users')
+      .update({
+        suspended_until: suspendUntil.toISOString(),
+        suspended_reason: suspendReason
+      })
+      .eq('id', selectedUser.id);
+    setShowSuspendModal(false);
+    loadUsers();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,14 +148,28 @@ const UserManagement = () => {
     if (editingUser) {
       await supabase
         .from('users')
-        .update(formData)
+        .update({ role: formData.role })
         .eq('id', editingUser.id);
-    } else {
-      await supabase.from('users').insert([formData]);
     }
 
     setShowModal(false);
     loadUsers();
+  };
+
+  const getUserStatus = (user: UserData) => {
+    if (user.blocked) return 'Blocked';
+    if (user.suspended_until && new Date(user.suspended_until) > new Date()) {
+      return 'Suspended';
+    }
+    return 'Active';
+  };
+
+  const getUserStatusColor = (user: UserData) => {
+    if (user.blocked) return 'bg-red-100 text-red-800';
+    if (user.suspended_until && new Date(user.suspended_until) > new Date()) {
+      return 'bg-yellow-100 text-yellow-800';
+    }
+    return 'bg-green-100 text-green-800';
   };
 
   return (
@@ -116,13 +184,6 @@ const UserManagement = () => {
             >
               <RefreshCw className="h-5 w-5 mr-2" />
               Refresh
-            </button>
-            <button
-              onClick={handleAdd}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              {t('users.add')}
             </button>
           </div>
         </div>
@@ -173,7 +234,7 @@ const UserManagement = () => {
                         <User className="h-6 w-6 text-blue-600" />
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{user.full_name}</div>
+                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
                       </div>
                     </div>
                   </td>
@@ -195,31 +256,61 @@ const UserManagement = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.status === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : user.status === 'suspended'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {user.status}
-                    </span>
+                    <div>
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getUserStatusColor(user)}`}>
+                        {getUserStatus(user)}
+                      </span>
+                      {user.suspended_until && new Date(user.suspended_until) > new Date() && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Until: {new Date(user.suspended_until).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => handleEdit(user)}
-                      className="text-blue-600 hover:text-blue-900 mr-4"
-                    >
-                      <Edit2 className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(user.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEdit(user)}
+                        className="text-blue-600 hover:text-blue-900"
+                        title="Edit Role"
+                      >
+                        <Edit2 className="h-5 w-5" />
+                      </button>
+                      {!user.blocked ? (
+                        <button
+                          onClick={() => handleBlock(user)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Block User"
+                        >
+                          <Ban className="h-5 w-5" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleUnblock(user.id)}
+                          className="text-green-600 hover:text-green-900"
+                          title="Unblock User"
+                        >
+                          <Unlock className="h-5 w-5" />
+                        </button>
+                      )}
+                      {(!user.suspended_until || new Date(user.suspended_until) <= new Date()) ? (
+                        <button
+                          onClick={() => handleSuspend(user)}
+                          className="text-orange-600 hover:text-orange-900"
+                          title="Suspend User"
+                        >
+                          <Clock className="h-5 w-5" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleUnsuspend(user.id)}
+                          className="text-green-600 hover:text-green-900"
+                          title="Remove Suspension"
+                        >
+                          <Unlock className="h-5 w-5" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -228,44 +319,40 @@ const UserManagement = () => {
         </div>
       </div>
 
-      {showModal && (
+      {showModal && editingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">
-              {editingUser ? t('users.edit') : t('users.add')}
-            </h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">Edit User Role</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">{t('users.email')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email (Read-only)</label>
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
+                  disabled
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">{t('users.name')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Name (Read-only)</label>
                 <input
                   type="text"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
+                  value={editingUser.name}
+                  disabled
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">{t('users.phone')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone (Read-only)</label>
                 <input
                   type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  value={editingUser.phone || 'N/A'}
+                  disabled
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">{t('users.role')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Role (Editable)</label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'user' })}
@@ -275,34 +362,124 @@ const UserManagement = () => {
                   <option value="admin">Admin</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">{t('users.status')}</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'suspended' | 'deleted' })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="active">Active</option>
-                  <option value="suspended">Suspended</option>
-                  <option value="deleted">Deleted</option>
-                </select>
+              <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+                <p className="text-xs text-yellow-800">
+                  Note: Name and phone cannot be edited by admin. Users manage their own information.
+                </p>
               </div>
               <div className="flex space-x-4 mt-6">
                 <button
                   type="submit"
                   className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  {editingUser ? t('common.update') : t('common.create')}
+                  Update Role
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
                   className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
                 >
-                  {t('common.cancel')}
+                  Cancel
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showBlockModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h3 className="text-2xl font-bold text-red-600 mb-4">Block User</h3>
+            <p className="text-gray-700 mb-4">
+              You are about to block <strong>{selectedUser.name}</strong> ({selectedUser.email})
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Reason for Blocking</label>
+              <textarea
+                value={blockReason}
+                onChange={(e) => setBlockReason(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                rows={3}
+                placeholder="Enter reason for blocking this user..."
+                required
+              />
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded p-3 mb-4">
+              <p className="text-xs text-red-800">
+                Blocked users will not be able to log in or access the system.
+              </p>
+            </div>
+            <div className="flex space-x-4">
+              <button
+                onClick={confirmBlock}
+                className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Confirm Block
+              </button>
+              <button
+                onClick={() => setShowBlockModal(false)}
+                className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSuspendModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h3 className="text-2xl font-bold text-orange-600 mb-4">Suspend User</h3>
+            <p className="text-gray-700 mb-4">
+              You are about to suspend <strong>{selectedUser.name}</strong> ({selectedUser.email})
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Suspension Duration (Days)</label>
+              <select
+                value={suspendDays}
+                onChange={(e) => setSuspendDays(Number(e.target.value))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+              >
+                <option value={1}>1 Day</option>
+                <option value={3}>3 Days</option>
+                <option value={7}>7 Days</option>
+                <option value={14}>14 Days</option>
+                <option value={30}>30 Days</option>
+                <option value={90}>90 Days</option>
+              </select>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Reason for Suspension</label>
+              <textarea
+                value={suspendReason}
+                onChange={(e) => setSuspendReason(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                rows={3}
+                placeholder="Enter reason for suspension..."
+                required
+              />
+            </div>
+            <div className="bg-orange-50 border border-orange-200 rounded p-3 mb-4">
+              <p className="text-xs text-orange-800">
+                Suspended users will not be able to access the system until the suspension period expires.
+              </p>
+            </div>
+            <div className="flex space-x-4">
+              <button
+                onClick={confirmSuspend}
+                className="flex-1 bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors"
+              >
+                Confirm Suspension
+              </button>
+              <button
+                onClick={() => setShowSuspendModal(false)}
+                className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

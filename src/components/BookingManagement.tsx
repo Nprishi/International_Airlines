@@ -71,7 +71,9 @@ const BookingManagement = () => {
       `)
       .order('created_at', { ascending: false });
 
-    if (!error && data) {
+    if (error) {
+      console.error('Error loading bookings:', error);
+    } else if (data) {
       console.log('Loaded bookings with details:', data);
       setBookings(data as any);
     }

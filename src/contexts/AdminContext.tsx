@@ -43,7 +43,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return false;
     }
 
-    if (password !== 'admin123') {
+    if (password !== 'adminself') {
       return false;
     }
 

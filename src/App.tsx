@@ -7,6 +7,7 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import Header from './components/Header';
 import Home from './components/Home';
 import LoginSelection from './components/LoginSelection';
+import SignupSelection from './components/SignupSelection';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import BookingFlow from './components/BookingFlow';
@@ -29,6 +30,7 @@ function App() {
             <Router>
               <Routes>
                 <Route path="/select-login" element={<LoginSelection />} />
+                <Route path="/select-signup" element={<SignupSelection />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin/dashboard" element={<NewAdminDashboard />} />
                 <Route

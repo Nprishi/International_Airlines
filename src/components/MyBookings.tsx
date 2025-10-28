@@ -9,6 +9,7 @@ const MyBookings: React.FC = () => {
   const { user } = useAuth();
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     if (user) {
@@ -17,6 +18,13 @@ const MyBookings: React.FC = () => {
       setLoading(false);
     }
   }, [user]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const loadBookings = async () => {
     if (!user) return;
@@ -69,6 +77,54 @@ const MyBookings: React.FC = () => {
     });
   };
 
+  const getCancellationDeadline = (bookingDate: string) => {
+    const bookingTime = new Date(bookingDate);
+    const deadline = new Date(bookingTime.getTime() + 2 * 60 * 60 * 1000); // Add 2 hours
+    return deadline;
+  };
+
+  const canCancelBooking = (booking: any) => {
+    if (booking.status === 'cancelled' || booking.status === 'completed' || booking.status === 'pending_cancellation') {
+      return false;
+    }
+    const deadline = getCancellationDeadline(booking.created_at);
+    return currentTime < deadline;
+  };
+
+  const getTimeRemaining = (bookingDate: string) => {
+    const deadline = getCancellationDeadline(bookingDate);
+    const diff = deadline.getTime() - currentTime.getTime();
+
+    if (diff <= 0) {
+      return { expired: true, text: 'Cancellation period expired' };
+    }
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    return {
+      expired: false,
+      text: `${hours}h ${minutes}m ${seconds}s remaining`,
+      hours,
+      minutes,
+      seconds
+    };
+  };
+
+  const formatDeadlineTime = (bookingDate: string) => {
+    const deadline = getCancellationDeadline(bookingDate);
+    return deadline.toLocaleString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -94,6 +150,11 @@ const MyBookings: React.FC = () => {
 
     if (booking.status === 'completed') {
       alert('Cannot cancel a completed flight.');
+      return;
+    }
+
+    if (!canCancelBooking(booking)) {
+      alert('Cancellation period has expired. You can only cancel within 2 hours of booking.');
       return;
     }
 
@@ -277,6 +338,51 @@ const MyBookings: React.FC = () => {
                         </div>
                       </div>
 
+                      {/* Cancellation Window Information */}
+                      {booking.status !== 'cancelled' && booking.status !== 'completed' && (
+                        <div className={`mb-4 p-3 rounded-lg ${
+                          canCancelBooking(booking)
+                            ? 'bg-blue-50 border border-blue-200'
+                            : 'bg-gray-50 border border-gray-200'
+                        }`}>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold text-gray-900 mb-1">
+                                <Clock className="h-4 w-4 inline mr-1" />
+                                Cancellation Window
+                              </p>
+                              <p className="text-xs text-gray-600 mb-1">
+                                Booked: {new Date(booking.created_at).toLocaleString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                              <p className="text-xs text-gray-600">
+                                Deadline: {formatDeadlineTime(booking.created_at)}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              {canCancelBooking(booking) ? (
+                                <div>
+                                  <p className="text-xs text-gray-600 mb-1">Time remaining:</p>
+                                  <p className="text-sm font-bold text-blue-600">
+                                    {getTimeRemaining(booking.created_at).text}
+                                  </p>
+                                </div>
+                              ) : (
+                                <div>
+                                  <p className="text-xs font-semibold text-red-600">
+                                    {getTimeRemaining(booking.created_at).text}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="mb-4">
                         <p className="text-sm text-gray-600 mb-2">Passenger & Seat</p>
                         <div className="space-y-1">
@@ -305,13 +411,24 @@ const MyBookings: React.FC = () => {
                           Email Confirmation
                         </button>
                         {booking.status !== 'cancelled' && booking.status !== 'completed' && booking.status !== 'pending_cancellation' && (
-                          <button
-                            onClick={() => handleCancelBooking(booking)}
-                            className="flex-1 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors flex items-center justify-center text-sm"
-                          >
-                            <XCircle className="h-4 w-4 mr-2" />
-                            Cancel Booking
-                          </button>
+                          canCancelBooking(booking) ? (
+                            <button
+                              onClick={() => handleCancelBooking(booking)}
+                              className="flex-1 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors flex items-center justify-center text-sm"
+                            >
+                              <XCircle className="h-4 w-4 mr-2" />
+                              Cancel Booking
+                            </button>
+                          ) : (
+                            <button
+                              disabled
+                              className="flex-1 bg-gray-400 text-white py-2 px-4 rounded-md cursor-not-allowed flex items-center justify-center text-sm"
+                              title="Cancellation period expired (2 hours from booking)"
+                            >
+                              <XCircle className="h-4 w-4 mr-2" />
+                              Cancellation Expired
+                            </button>
+                          )
                         )}
                         {booking.status === 'pending_cancellation' && (
                           <button

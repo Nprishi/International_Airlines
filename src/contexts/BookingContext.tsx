@@ -64,28 +64,37 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
         amount: totalAmount
       });
 
+      const bookingInsertData = {
+        user_id: userId,
+        flight_id: selectedFlight.id,
+        passenger_name: `${primaryPassenger.firstName} ${primaryPassenger.lastName}`,
+        passenger_email: primaryPassenger.email,
+        passenger_phone: primaryPassenger.phone,
+        seat_number: selectedSeats.join(', '),
+        booking_reference: bookingReference,
+        payment_status: 'completed',
+        payment_method: paymentDetails?.method || 'credit-card',
+        total_amount: totalAmount,
+        status: 'confirmed',
+      };
+
+      console.log('Inserting booking into database:', bookingInsertData);
+
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
-        .insert([
-          {
-            user_id: userId,
-            flight_id: selectedFlight.id,
-            passenger_name: `${primaryPassenger.firstName} ${primaryPassenger.lastName}`,
-            passenger_email: primaryPassenger.email,
-            passenger_phone: primaryPassenger.phone,
-            seat_number: selectedSeats.join(', '),
-            booking_reference: bookingReference,
-            payment_status: 'completed',
-            payment_method: paymentDetails?.method || 'credit-card',
-            total_amount: totalAmount,
-            status: 'confirmed',
-          },
-        ])
+        .insert([bookingInsertData])
         .select()
         .single();
 
       if (bookingError) {
-        console.error('Booking creation error:', bookingError);
+        console.error('❌ Booking creation error:', bookingError);
+        console.error('Error details:', {
+          message: bookingError.message,
+          details: bookingError.details,
+          hint: bookingError.hint,
+          code: bookingError.code
+        });
+        alert(`Database Error: ${bookingError.message}\nDetails: ${bookingError.details || 'None'}\nHint: ${bookingError.hint || 'None'}`);
         return null;
       }
 

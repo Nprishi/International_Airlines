@@ -202,6 +202,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
       }
 
       setIsProcessing(false);
+      console.log('✅ Payment successful! Redirecting to confirmation page...');
       onNext();
     } catch (error) {
       console.error('Payment processing error:', error);
@@ -229,6 +230,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onNext, onBack }) => {
       return;
     }
 
+    console.log('✅ Payment successful! Redirecting to confirmation page...');
     onNext();
   };
 

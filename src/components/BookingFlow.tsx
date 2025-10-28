@@ -31,6 +31,7 @@ const BookingFlow: React.FC = () => {
   }, [user, navigate, searchFilters]);
 
   const nextStep = () => {
+    console.log(`Moving from step ${currentStep} to step ${currentStep + 1}`);
     setCurrentStep(prev => prev + 1);
   };
 

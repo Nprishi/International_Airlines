@@ -172,20 +172,32 @@ const MyBookings: React.FC = () => {
         .from('bookings')
         .update({
           cancelled_by_user: true,
-          status: 'pending_cancellation'
+          status: 'cancelled'
         })
         .eq('id', booking.id);
 
       if (error) {
-        console.error('Error requesting cancellation:', error);
-        alert('Failed to request cancellation. Please try again.');
+        console.error('Error cancelling booking:', error);
+
+        // Check if error is due to cancellation policy
+        if (error.message && error.message.includes('cancellation window')) {
+          alert('Cancellation Failed: The 2-hour cancellation window has expired. You can only cancel within 2 hours of booking.');
+        } else {
+          alert('Failed to cancel booking. Please contact support or try again.');
+        }
       } else {
-        alert('Cancellation request submitted successfully. An admin will process your request shortly.');
+        alert('Booking cancelled successfully! The cancellation has been processed.');
         loadBookings();
       }
-    } catch (error) {
-      console.error('Error requesting cancellation:', error);
-      alert('Failed to request cancellation. Please try again.');
+    } catch (error: any) {
+      console.error('Error cancelling booking:', error);
+
+      // Check if error is due to cancellation policy
+      if (error?.message && error.message.includes('cancellation window')) {
+        alert('Cancellation Failed: The 2-hour cancellation window has expired. You can only cancel within 2 hours of booking.');
+      } else {
+        alert('Failed to cancel booking. Please contact support or try again.');
+      }
     }
   };
 

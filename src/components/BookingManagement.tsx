@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 interface BookingData {
   id: string;
-  user_id: string;
+  user_id: string | null;
   flight_id: string;
   passenger_name: string;
   passenger_email: string;
@@ -33,10 +33,10 @@ interface BookingData {
   };
   user?: {
     id: string;
-    name: string;
+    full_name: string;
     email: string;
     phone?: string;
-  };
+  } | null;
 }
 
 const BookingManagement = () => {
@@ -67,7 +67,7 @@ const BookingManagement = () => {
       .select(`
         *,
         flight:flights(*),
-        user:users(id, name, email, phone)
+        user:users(id, full_name, email, phone)
       `)
       .order('created_at', { ascending: false });
 
@@ -185,6 +185,9 @@ const BookingManagement = () => {
                   {t('bookings.passenger')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  User Type
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {t('bookings.flight')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -217,6 +220,22 @@ const BookingManagement = () => {
                     <div className="text-sm text-gray-900">{booking.passenger_name}</div>
                     <div className="text-xs text-gray-500">{booking.passenger_email}</div>
                     <div className="text-xs text-gray-500">{booking.passenger_phone}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {booking.user_id ? (
+                      <div>
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                          Registered
+                        </span>
+                        {booking.user && (
+                          <div className="text-xs text-gray-500 mt-1">{booking.user.full_name}</div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                        Guest
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">{booking.flight?.flight_number || 'N/A'}</div>
@@ -328,6 +347,23 @@ const BookingManagement = () => {
                   <div>
                     <p className="text-sm text-gray-600">Seat Number</p>
                     <p className="font-medium text-blue-600">{selectedBooking.seat_number}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Booking Type</p>
+                    {selectedBooking.user_id ? (
+                      <div>
+                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                          Registered User
+                        </span>
+                        {selectedBooking.user && (
+                          <p className="text-xs text-gray-500 mt-1">Account: {selectedBooking.user.full_name}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                        Guest Booking
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

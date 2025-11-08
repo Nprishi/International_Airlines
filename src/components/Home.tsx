@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Calendar, Users, Plane, ArrowRightLeft, Star, Shield, Clock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useBooking } from '../contexts/BookingContext';
-import { cities } from '../data/mockData';
+import { supabase } from '../lib/supabase';
 import { SearchFilters } from '../types';
 
 const Home: React.FC = () => {
@@ -17,10 +17,31 @@ const Home: React.FC = () => {
     tripType: 'one-way' as 'one-way' | 'round-trip',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  
+  const [cities, setCities] = useState<string[]>([]);
+
   const { user } = useAuth();
   const { setSearchFilters } = useBooking();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    loadCities();
+  }, []);
+
+  const loadCities = async () => {
+    const { data, error } = await supabase
+      .from('flights')
+      .select('from_location, to_location');
+
+    if (!error && data) {
+      const citySet = new Set<string>();
+      data.forEach((flight: any) => {
+        if (flight.from_location) citySet.add(flight.from_location);
+        if (flight.to_location) citySet.add(flight.to_location);
+      });
+      const sortedCities = Array.from(citySet).sort();
+      setCities(sortedCities);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

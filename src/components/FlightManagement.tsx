@@ -121,12 +121,29 @@ const FlightManagement = () => {
     };
 
     if (editingFlight) {
-      await supabase
+      const { error } = await supabase
         .from('flights')
         .update(flightData)
         .eq('id', editingFlight.id);
+
+      if (error) {
+        console.error('Error updating flight:', error);
+        alert('Failed to update flight: ' + error.message);
+        return;
+      }
     } else {
-      await supabase.from('flights').insert([flightData]);
+      const newFlightData = {
+        ...flightData,
+        created_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase.from('flights').insert([newFlightData]);
+
+      if (error) {
+        console.error('Error adding flight:', error);
+        alert('Failed to add flight: ' + error.message);
+        return;
+      }
     }
 
     setShowModal(false);
